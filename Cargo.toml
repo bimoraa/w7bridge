@@ -1,0 +1,26 @@
+[package]
+name = "w7bridge"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Windows의 등록된 프로젝트 명령을 실행하는 MCP 서버"
+license = "MIT"
+repository = "https://github.com/bimoraa/w7bridge"
+
+[workspace]
+members = ["xtask"]
+default-members = ["."]
+resolver = "3"
+
+[dependencies]
+process-wrap = { version = "10.0.1", default-features = false, features = ["tokio1", "job-object", "kill-on-drop", "process-group"] }
+rmcp = { version = "3.5.0", default-features = false, features = ["server", "transport-io"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "io-util", "signal", "sync", "time"] }
+tokio-util = "0.7"
+toml = "1"
+
+[dev-dependencies]
+tempfile = "3"

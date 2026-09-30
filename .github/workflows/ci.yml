@@ -1,0 +1,32 @@
+name: Rust 검증
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.os }} 검증
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust 준비
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: 형식 검사
+        run: cargo run --locked -p xtask -- --check
+      - name: 전체 target 검사
+        run: cargo check --locked --workspace --all-targets
+      - name: Clippy 검사
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - name: 테스트
+        run: cargo test --locked --workspace

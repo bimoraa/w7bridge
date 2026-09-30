@@ -1,0 +1,24 @@
+# w7bridge.toml로 복사해. 기본 상태에서는 실행 가능한 프로젝트가 없어.
+version = 1
+projects = []
+
+[execution]
+timeout_seconds = 60
+output_bytes = 65536
+concurrency = 1
+
+# 등록하려면 위의 projects = []를 지우고 실제 절대 경로를 넣어.
+# [[projects]]
+# id = "sample"
+# root = 'C:\Projects\sample'
+#
+# [projects.commands.build]
+# executable = 'C:\Users\bridge\.cargo\bin\cargo.exe'
+# args = ["build", "--locked"]
+#
+# [projects.commands.test]
+# executable = 'C:\Users\bridge\.cargo\bin\cargo.exe'
+# args = ["test", "--locked"]
+#
+# [projects.commands.test.env]
+# RUST_BACKTRACE = "1"
