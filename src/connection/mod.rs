@@ -3,6 +3,7 @@
 pub(crate) mod client;
 mod git;
 mod handshake;
+mod progress;
 pub(crate) mod session;
 pub(crate) mod transport;
 

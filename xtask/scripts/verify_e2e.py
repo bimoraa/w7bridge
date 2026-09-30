@@ -5,6 +5,7 @@ import hashlib
 import json
 import time
 from pathlib import Path
+from mcp_client import Client
 
 parser = argparse.ArgumentParser(description='Mac hub에서 sync → Windows build/test → log → screenshot을 검증해')
 parser.add_argument('--binary', required=True, type=Path)
@@ -13,58 +14,15 @@ parser.add_argument('--local-root', required=True, type=Path)
 parser.add_argument('--project-id', required=True)
 parser.add_argument('--evidence', required=True, type=Path)
 parser.add_argument('--resume', action='store_true')
+parser.add_argument('--revision', default='mac-edit-v2')
 parser.add_argument('--fresh-service', action='store_true')
 args = parser.parse_args()
-
-class Client:
-    def __init__(self, process, log):
-        self.process, self.log = process, log
-        self.pending = {}
-        self.next_id = 0
-    async def receive(self):
-        while line := await self.process.stdout.readline():
-            value = json.loads(line)
-            self.log.write(json.dumps({'direction':'response','message':value})+'\n')
-            self.log.flush()
-            future = self.pending.pop(value.get('id'), None)
-            if future and not future.done():
-                future.set_result(value)
-        for future in self.pending.values():
-            if not future.done():
-                future.set_exception(RuntimeError('MCP transport 종료'))
-    async def notify(self, method, params=None):
-        message = {'jsonrpc':'2.0','method':method}
-        if params is not None:
-            message['params'] = params
-        self.process.stdin.write((json.dumps(message)+'\n').encode())
-        await self.process.stdin.drain()
-    async def request(self, method, params):
-        self.next_id += 1
-        future = asyncio.get_running_loop().create_future()
-        self.pending[self.next_id] = future
-        message = {'jsonrpc':'2.0','id':self.next_id,'method':method,'params':params}
-        self.log.write(json.dumps({'direction':'request','message':message})+'\n')
-        self.log.flush()
-        self.process.stdin.write((json.dumps(message)+'\n').encode())
-        await self.process.stdin.drain()
-        response = await asyncio.wait_for(future, 150)
-        assert 'error' not in response, response
-        return response['result']
-    async def tool(self, name, **arguments):
-        deadline = time.monotonic() + 120
-        while True:
-            result = await self.request('tools/call', {'name':name,'arguments':{'project_id':args.project_id,**arguments}})
-            if result.get('isError') is not True:
-                return result
-            if name not in {'read_process_output','list_processes','project_status','read_events'} or time.monotonic() >= deadline:
-                raise RuntimeError(result)
-            await asyncio.sleep(2)
 
 async def main():
     args.evidence.mkdir(parents=True, exist_ok=True)
     with (args.evidence / 'e2e-mcp.jsonl').open('a' if args.resume else 'w') as log, (args.evidence / 'e2e-stderr.log').open('a' if args.resume else 'w') as stderr:
         process = await asyncio.create_subprocess_exec(str(args.binary.resolve()),'hub','--config',str(args.pairing.resolve()),stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,stderr=stderr,limit=16*1024*1024)
-        client = Client(process,log)
+        client = Client(process,log,args.project_id)
         receiver = asyncio.create_task(client.receive())
         try:
             await client.request('initialize',{'protocolVersion':'2025-11-25','capabilities':{},'clientInfo':{'name':'w7bridge-e2e','version':'1'}})
@@ -75,10 +33,10 @@ async def main():
                 assert time.monotonic() < deadline, 'Windows initial import가 완료되지 않았습니다'
                 await asyncio.sleep(.5)
             if args.resume:
-                assert initial.read_text() == 'mac-edit-v2\n'
+                assert initial.read_text() == args.revision+'\n'
             else:
                 assert initial.read_text() == 'windows-initial-v1\n'
-                initial.write_text('mac-edit-v2\n')
+                initial.write_text(args.revision+'\n')
             verified = {}
             for name in ['check','build','test']:
                 existing = (await client.tool('list_processes'))['structuredContent'] if args.resume else None
@@ -107,7 +65,7 @@ async def main():
                 assert time.monotonic() < deadline, output
                 await asyncio.sleep(.5)
                 output = (await client.tool('read_process_output',process_id=start['process_id']))['structuredContent']
-            assert 'mac-edit-v2' in ''.join(event['text'] for event in output['events'])
+            assert args.revision in ''.join(event['text'] for event in output['events'])
             replay = (await client.tool('read_process_output',process_id=start['process_id'],cursor=output['next_cursor']))['structuredContent']
             assert not replay['events']
             verified['run'] = {'process_id':start['process_id'],'output':output}

@@ -37,5 +37,8 @@ pub(crate) struct RunArguments {
 
     pub project_id: String,
     pub command: String,
+    #[serde(default)]
+    pub wait: bool,
+    pub yield_time_ms: Option<u64>,
 
 }

@@ -85,11 +85,13 @@ Codex의 MCP command를 Mac의 w7bridge executable, args를 `hub --config /absol
 ```json
 {"name":"list_projects","arguments":{}}
 {"name":"project_status","arguments":{"project_id":"windows-dev__sample"}}
-{"name":"start_process","arguments":{"project_id":"windows-dev__sample","command":"build"}}
-{"name":"read_process_output","arguments":{"project_id":"windows-dev__sample","process_id":"응답의 ID","cursor":0,"wait_seconds":30}}
+{"name":"run_command","arguments":{"project_id":"windows-dev__sample","command":"build"}}
+{"name":"read_process_output","arguments":{"project_id":"windows-dev__sample","process_id":"응답의 ID","cursor":"응답의 next_cursor","wait_seconds":30}}
 ```
 
-`start_process`와 `run_command` 모두 실행 전에 fresh sync round를 요청한다. conflict면 즉시 실패하고 offline/미완료 상태면 대기 한도 후 실패한다. `start_process`는 handle을 빨리 돌려주며 `run_command`는 완료 결과를 돌려준다. 완료 전에는 `list_processes`에서도 handle을 찾을 수 있다. 로그의 `next_cursor`를 다음 호출의 `cursor`에 넣는다. 오래된 로그가 ring 한도 밖으로 나갔으면 `truncated = true`다. 연결이 끊겨 응답 결과를 모르면 명령을 재실행하지 말고 handle과 event를 조회한다.
+`start_process`와 `run_command` 모두 실행 전에 fresh sync round를 요청한다. conflict면 즉시 실패하고 offline/미완료 상태면 대기 한도 후 실패한다. `start_process`는 handle을 빨리 돌려준다. `run_command`도 기본적으로 첫 출력 또는 process 시작 후 100 ms에 handle과 현재 출력을 돌려준다. `yield_time_ms`로 시작 후 대기 한도를 0–30000 ms 안에서 지정한다. sync와 snapshot 준비 시간은 이 한도에 포함하지 않는다. `status = "running"`은 build 성공이 아니며 최종 exit code와 revision 검증은 완료 뒤 확인한다. 완료 전에는 `list_processes`에서도 handle을 찾을 수 있다. 로그의 `next_cursor` 숫자를 다음 호출의 `cursor`에 넣는다. `read_process_output`은 새 출력이 생기면 바로 응답하므로 30초 long poll이 출력 전달을 30초 늦추지 않는다. 오래된 로그가 ring 한도 밖으로 나갔으면 `truncated = true`다. 연결이 끊겨 응답 결과를 모르면 명령을 재실행하지 말고 handle과 event를 조회한다.
+
+최종 결과까지 한 요청으로 기다리려면 `run_command`에 `wait = true`를 지정한다. 이때 `yield_time_ms`는 함께 지정하지 않는다. client가 요청 `_meta.progressToken`을 제공하면 실행 중 `notifications/progress`로 stdout/stderr chunk를 보내며 hub가 SSH peer의 token을 요청별로 분리해 전달한다. newline을 기다리지 않지만 child가 아직 flush하지 않은 출력은 읽을 수 없다. notification의 `_meta["io.w7bridge/output"]`에는 project/process ID, events와 cursor가 있다. 전송 간격은 최소 16 ms이며 bounded queue와 느린 client 제한을 사용한다. relay에서 notification이 유실되면 `truncated`, `missed_notifications`, `resume_cursor`를 보고하고 process cursor로 보충한다. client가 notification을 표시하지 않아도 기본 handle과 `read_process_output`으로 실행 중 출력을 읽을 수 있다. MCP notification이 Codex 대화 UI에 자동 표시된다고 보장하지 않는다.
 
 `stop_process`는 sync 실패 중에도 전체 process tree를 종료한다. timeout은 foreground command에 적용한다. background command는 명시 stop 또는 host shutdown까지 계속 실행한다. `restart_on_sync = true`는 background + requires_sync command만 허용한다. 같은 revision checkpoint는 restart하지 않으며 build/test preset에 자동 restart를 붙이지 않는다.
 

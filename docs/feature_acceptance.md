@@ -5,7 +5,7 @@
 | 기능 | 구현 상태 | 필수 검증 |
 | --- | --- | --- |
 | fresh sync 후 build/test | peer별 fresh generation gate + snapshot revision 확인 | 최신 Mac revision, conflict, offline, 취소 |
-| stdout/stderr와 process handle | 모든 command handle, bounded ring + long-poll/cursor | 완료 전 양 stream, cursor replay, 연결 종료와 복구 |
+| stdout/stderr와 process handle | run_command 기본 첫 출력/100 ms 반환, progress notification, bounded ring + long-poll/cursor | 완료 전 양 stream, cursor replay, 요청별 token 분리, 연결 종료와 복구 |
 | reconnect/resume | 기존 daemon backoff와 durable journal | 실제 SSH 단절, reconnect, 응답 유실 |
 | 인증/암호화 | SSH key/host key, forwarding 차단 | trusted key 성공, 잘못된 host key/key 거부 |
 | project file 경계 | 기존 정책 + Windows reparse point 차단 | traversal, symlink/junction, 미등록 root |
@@ -37,11 +37,11 @@
 - file tool 경계는 OS sandbox가 아니다. 현재 범위에서는 agent의 file access를 제한하며 build/script의 OS 격리는 구현되지 않았다.
 - Git metadata를 live-sync하지 않는다. 대상 existing repo를 reset/overwrite하지 않고 credential·사용자 identity를 복사하지 않는다. 자동 commit/push하지 않는다.
 
-## 현재 확인된 결과
+## 2026-09-30 확인된 결과
 
 - macOS formatter/check/Clippy/workspace test와 build는 통과했다. library test 65개가 통과했고 integration/xtask suite도 통과했다. subprocess fixture와 platform 전용 ignored test는 별도이며 pass로 합산하지 않는다.
 - Windows-native source `0c0074ed2a4a8444b0727d9fc629ef5bdd8f0fad306c4751abb473fa0051969c`의 모든 gate와 build가 통과했다. `windows-native-result.json`의 모든 exit code가 0이고 전체 `windows-native.log`를 보존한다.
-- 이 source는 headless relay의 Ctrl-C listener 오류를 종료 신호로 처리하지 않는다. manifest의 모든 source hash와 결과 exit code를 확인했다. native gate 이후 production Rust 변경은 없고 두 Python fixture script만 수정했다.
+- 이 source는 headless relay의 Ctrl-C listener 오류를 종료 신호로 처리하지 않는다. 당시 manifest의 모든 source hash와 결과 exit code를 확인했다. 이후 realtime 출력 변경의 검증은 별도 snapshot으로 기록한다.
 - Windows lock contention과 Git extended path 문제를 native test에서 수정했다. junction fixture는 실제 PowerShell Junction 생성으로 검증하며, install fixture는 Codex discovery를 꺼 실제 사용자 project를 읽지 않는다.
 - peer별 fresh sync gate의 command forwarding regression을 실제 MCP transport로 검증한다. 다른 peer checkpoint로 통과하지 않으며 RPC error를 connection loss로 바꾸지 않는다. peer 대기 경로도 16개 한도를 적용한다.
 - 임시 Windows SCM service가 실제 실행되고 MCP read_events/list_processes/project_status 응답이 돌아왔다. Windows에만 있던 fixture source는 Mac으로 import됐다.
@@ -50,6 +50,16 @@
 - hub transport를 닫고 다시 연결한 뒤 기존 check/build/test/run handle을 조회했다. 완료된 build/test를 다시 실행하지 않고 기존 결과를 읽었으며 running app의 log도 유지됐다. 실제 Wi-Fi 차단 시험과는 구분한다.
 - 실제 Windows browser의 HTTP 응답과 MCP screenshot에서 `Compiled revision: mac-edit-v2`를 확인했다. `windows-verified.png`는 2560×1440 화면이며 `e2e-result.json`과 `e2e-mcp.jsonl`에 exit code, log, revision, screenshot metadata, app 취소 결과를 보존한다. screenshot만으로 build 성공을 판정하지 않는다.
 - fixture는 독립 Cargo workspace를 명시한다. Python MCP reader는 screenshot JSON frame을 위해 16 MiB까지 허용하고 resume 시 기존 running app을 재사용한다. 임시 SCM service와 검증 task만 제거했으며 permanent installation과 fixture source/evidence는 보존했다.
+
+## 2026-10-01 realtime 출력 검증
+
+- source `1e57f0ec4d50cec70c91f7aa4380a641ffc518fc2c39747197976c4e41d94389`의 macOS formatter/check/Clippy/workspace test/build와 Windows-native의 같은 gate가 모두 통과했다. [source manifest](evidence/2026-10-01/source-manifest.json), [Mac 결과](evidence/2026-10-01/macos-result.json), [Windows 결과](evidence/2026-10-01/windows-native-result.json)와 [전체 native log](evidence/2026-10-01/windows-native.log)를 보존한다.
+- 실제 Windows SCM service → named pipe relay → SSH → Mac hub에서 `run_command`가 완료 전 `running` handle을 반환했고 cursor로 stdout/stderr를 이어 읽었다. 첫 응답 4701 ms, 완료 6957 ms는 sync·연결·snapshot 준비를 포함한 전체 요청 시간이다. 100 ms 한도는 process가 시작된 뒤 적용되며 전체 요청 latency를 100 ms로 보장하지 않는다.
+- `wait=true`의 newline 없는 stdout/stderr가 각각 완료 1987 ms 전에 도착했다. 별도 stream/build 요청을 동시에 실행해 progress token, project ID와 process ID가 섞이지 않는 것을 확인했다. 두 exit code가 0이며 source snapshot의 시작/완료 revision이 같고 `revision_verified=true`다. [측정 결과](evidence/2026-10-01/streaming-result.json)와 [실제 MCP frame](evidence/2026-10-01/streaming-mcp.jsonl)을 보존한다.
+- SDK가 생성한 실제 request handle의 progress token을 사용하고 notification extension metadata를 보존한다. 기존 peer checkpoint regression에서 실제 MCP transport를 통한 progress forwarding도 확인한다. 첫 live 시도의 token forwarding 실패는 `before-token-fix-*` 증거에 별도로 남겼다.
+- 기본 run_command가 running handle을 반환한 뒤 hub transport를 닫고 다시 열었다. 같은 handle과 cursor로 모든 출력과 exit 0 결과를 읽었으며 command를 재실행하지 않았다. [reconnect 결과](evidence/2026-10-01/streaming-reconnect-result.json)와 [MCP frame](evidence/2026-10-01/streaming-reconnect.jsonl)을 보존한다. service restart 시험과는 구분한다.
+- screenshot은 이전 visual E2E 증거다. 이번 변경은 command 출력 경로이며 새 screenshot이나 실제 PC reboot 검증으로 취급하지 않는다. Codex의 notification UI 표시와 설치된 permanent binary 교체도 이번 검증 범위에 포함하지 않는다.
+- 검증 종료 뒤 owned SCM service가 없는 상태(1060)를 확인하고 임시 native/fixture task를 삭제했다. permanent 설치와 project source/evidence는 보존했다.
 
 ## 남은 검증과 지원 경계
 
@@ -64,3 +74,4 @@
 - `xtask/scripts/fixture_windows.py`: 기존 service가 없는 경우에만 owned root에 fixture/service를 만든다. stop/reinstall도 등록된 owned root/config를 확인한다.
 - `xtask/scripts/verify_e2e.py`: initial import, Mac edit, named command handle/cursor/result/revision과 MCP screenshot을 검증한다. reconnect recovery는 read-only 요청만 retry하고 결과가 불명확한 command를 자동 반복하지 않는다.
 - `xtask/scripts/render_windows.py`: 실행된 app의 실제 HTTP body를 확인한 후 Windows browser를 연다.
+- `xtask/scripts/verify_streaming.py`: 실제 service/SSH/hub를 통해 빠른 run_command handle, newline 없는 stdout/stderr의 완료 전 도착과 병렬 요청의 progress token 분리를 측정한다.

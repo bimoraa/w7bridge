@@ -66,7 +66,8 @@ async fn discovery_execution_and_input_policy_work_over_stdio() {
     assert_eq!(std::path::Path::new(project["root"].as_str().unwrap()), root.path().canonicalize().unwrap());
     assert!(project["device_id"].is_string());
     assert_eq!(listing["result"]["structuredContent"]["codex"]["status"], "missing");
-    let execution = client.call(4, "run_command", json!({ "project_id": "sample", "command": "test" })).await;
+    let execution =
+        client.call(4, "run_command", json!({ "project_id": "sample", "command": "test", "wait": true })).await;
     assert_eq!(execution["result"]["isError"], false);
     let output = &execution["result"]["structuredContent"];
     assert_eq!(output["exit_code"], 0);

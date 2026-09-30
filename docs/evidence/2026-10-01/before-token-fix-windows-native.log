@@ -1,0 +1,208 @@
+W7BRIDGE_NATIVE_BEGIN
+COMMAND cargo --version
+cargo 1.97.1 (c980f4866 2026-06-30)
+COMMAND rustc --version
+rustc 1.97.1 (8bab26f4f 2026-07-14)
+COMMAND cargo run --locked -p xtask -- --check
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running `target\debug\xtask.exe --check`
+COMMAND cargo check --locked --workspace --all-targets
+    Checking w7bridge v0.1.0 (D:\w7bridge-2158-c5bdf24d719f)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 05s
+COMMAND cargo clippy --locked --workspace --all-targets -- -D warnings
+    Checking w7bridge v0.1.0 (D:\w7bridge-2158-c5bdf24d719f)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.04s
+COMMAND cargo test --locked --workspace
+   Compiling w7bridge v0.1.0 (D:\w7bridge-2158-c5bdf24d719f)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.82s
+     Running unittests src\lib.rs (target\debug\deps\w7bridge-0587589ee42063a5.exe)
+
+running 65 tests
+test connection::tests::unsafe_remote_shell_inputs_and_ambiguous_options_are_rejected ... ok
+test filesystem::copy::tests::arguments_match_connect_defaults_and_reject_unsafe_or_duplicate_paths ... ok
+test config::tests::defaults_are_closed_and_example_is_valid ... ok
+test filesystem::transfer::tests::case_and_file_directory_collisions_fail_before_transfer ... ok
+test capture::tests::screenshot_is_disabled_by_default_and_cancellation_prevents_capture ... ok
+test config::tests::invalid_versions_unknown_fields_and_unbounded_limits_are_rejected ... ok
+test connection::tests::ssh_config_preserves_security_flags_alias_settings_and_argument_boundaries ... ok
+test platform::windows::filesystem::tests::shell_literals_cannot_change_the_script_and_worker_cleans_up_its_task ... ok
+test connection::tests::probe_rejects_another_mcp_server ... ok
+test filesystem::copy::tests::failed_binary_copy_removes_only_owned_staging_files ... ok
+test filesystem::transfer::tests::unsafe_and_nonportable_paths_are_rejected ... ok
+test capture::tests::corrupt_oversized_and_symlink_images_are_rejected ... ok
+test filesystem::copy::tests::missing_source_leaves_existing_install_untouched_and_releases_staging ... ok
+test connection::tests::probe_initializes_discovers_and_lists_without_running_commands ... ok
+test protocol::message::tests::event_scope_replay_truncation_long_poll_and_cancellation_are_explicit ... ok
+test filesystem::copy::tests::existing_staging_is_preserved_without_publishing_files ... ok
+test security::permissions::tests::batch_files_are_not_executables ... ok
+test security::permissions::tests::invalid_arguments_and_environment_are_rejected ... ok
+test security::permissions::tests::registry_rejects_duplicates_bad_names_relative_paths_and_unknown_commands ... ok
+test security::permissions::tests::listing_hides_execution_settings_and_deleted_paths_fail_closed ... ok
+test security::codex::tests::legacy_reads_only_local_project_metadata_and_reports_unavailable_roots ... ok
+test memory::tests::registry_paths_encoding_and_size_cannot_bypass_file_policy ... ok
+test filesystem::copy::tests::fresh_install_publishes_complete_files_and_preserves_unrelated_files ... ok
+test security::discovery::tests::folder_discovery_is_bounded_skips_builds_and_never_grants_commands ... ok
+test security::presets::tests::discovery_does_not_enable_presets_and_restart_requires_sync_background ... ok
+test security::presets::tests::approved_presets_detect_repo_type_and_explicit_commands_win ... ok
+test sync::state::coordination_tests::wait_cannot_create_more_peers_than_checkpoint_limit ... ok
+test filesystem::copy::tests::update_preserves_config_bytes_and_rejects_running_from_the_installed_path ... ok
+test filesystem::copy::tests::invalid_config_or_registry_is_rejected_before_any_file_is_installed ... ok
+test filesystem::transfer::tests::root_identity_is_persistent_and_new_folders_do_not_reuse_it ... ok
+test execution::process::revision_tests::changed_source_after_sync_does_not_spawn_the_command ... ok
+test filesystem::chunks::tests::abandoned_transfer_can_be_cancelled_without_touching_target ... ok
+test security::codex::tests::missing_corrupt_and_disabled_sources_do_not_create_or_reuse_a_registry ... ok
+test tools::memory::tests::strict_arguments_require_an_explicit_revision_and_utf8_content ... ok
+test tools::files::tests::active_server_config_is_excluded_from_listing_reading_and_writing ... ok
+test update::tests::signed_manifest_rejects_tampering_wrong_key_downgrade_and_wrong_platform ... ok
+test security::codex::tests::listing_merges_explicit_permissions_without_granting_discovered_projects ... ok
+test security::codex::tests::sqlite_reads_committed_wal_changes_and_never_resurrects_legacy_projects ... ok
+test update::tests::interrupted_replace_recovers_binary_and_preserves_config_and_newer_changes ... ok
+test memory::tests::missing_context_and_utf8_round_trip_use_the_project_files ... ok
+test memory::tests::external_edits_are_fresh_and_stale_updates_preserve_them ... ok
+test tools::memory::tests::shared_file_capacity_cancellation_and_conflicts_preserve_content ... ok
+test tools::files::tests::file_tools_require_versions_preserve_binary_contents_and_return_typed_failures ... ok
+test connection::session::forward_tests::forwarded_command_waits_for_its_own_peer_checkpoint ... ok
+test sync::state::coordination_tests::another_mac_cannot_confirm_requested_peers_sync_and_conflict_blocks_build ... ok
+test filesystem::history::tests::durable_history_restore_checks_current_revision_and_blob_integrity ... ok
+test filesystem::transfer::tests::conditional_writes_preserve_newer_content_and_deletions_require_the_version ... ok
+test filesystem::history::tests::history_prunes_before_reserving_incoming_content_and_preserves_pending ... ok
+test filesystem::chunks::tests::rename_reuses_content_and_corrupt_chunk_never_commits ... ok
+test filesystem::transfer::tests::windows_junctions_cannot_redirect_file_access_or_metadata ... ok
+test sync::tests::root_identity_policy_change_and_corrupt_journal_fail_without_deleting_files ... ok
+test filesystem::transfer::tests::context_is_shared_even_when_gitignored_and_artifacts_are_filtered ... ok
+test filesystem::chunks::tests::delta_resume_reopen_integrity_and_stale_commit_preserve_target ... ok
+test sync::tests::cross_peer_directory_case_and_file_directory_collisions_are_rejected_before_transfer ... ok
+test sync::tests::lost_write_reply_then_source_changes_recovers_without_false_conflict ... ok
+test sync::tests::excluded_build_context_and_git_metadata_never_transfer ... ok
+test sync::tests::divergent_initial_files_and_simultaneous_edit_delete_preserve_both_sides ... ok
+test sync::tests::unknown_write_outcome_and_new_peer_edit_stay_conflicted_after_restart ... ok
+test sync::tests::initial_import_bidirectional_context_and_deletion_survive_reopen ... ok
+test memory::tests::memory_updates_sync_in_both_directions_and_preserve_conflicts ... ok
+test platform::windows::filesystem::tests::native_cleanup_accepts_an_already_removed_task ... ok
+test sync::tests::multiple_device_baselines_keep_each_peers_offline_changes_separate ... ok
+test filesystem::history::tests::prepared_recovery_and_deletion_keep_original_and_bound_history ... ok
+test git::tests::incomplete_corrupt_and_stale_git_import_never_replaces_repository ... ok
+test git::tests::bundle_index_and_worktree_handoff_both_directions_preserve_new_destination_changes ... ok
+
+test result: ok. 65 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.34s
+
+     Running unittests src\main.rs (target\debug\deps\w7bridge-dd8b3ff55e265bae.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\capture.rs (target\debug\deps\capture-aa7d3644303008f1.exe)
+
+running 2 tests
+test native_screenshot_returns_png_over_real_stdio ... ignored, 로그인한 native desktop과 screen recording 권한이 필요해
+test screenshot_optin_and_input_policy_are_enforced_over_mcp ... ok
+
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\codex_projects.rs (target\debug\deps\codex_projects-dbb5d62e6ec8ec2a.exe)
+
+running 3 tests
+test fixture::process ... ignored, MCP 테스트가 환경을 준비한 뒤 실행하는 subprocess fixture
+test live_windows_codex_projects_are_returned_over_mcp ... ignored, 실제 Windows Codex home을 W7BRIDGE_LIVE_CODEX_HOME으로 지정한 읽기 전용 검증
+test codex_projects_refresh_over_stdio_without_changing_execution_permissions ... ok
+
+test result: ok. 1 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running tests\codex_ssh.rs (target\debug\deps\codex_ssh-3d5a84dc114bd295.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\command.rs (target\debug\deps\command-433ce4b7481f192b.exe)
+
+running 5 tests
+test fixture::process ... ignored, MCP 테스트가 환경을 준비한 뒤 실행하는 subprocess fixture
+test nonzero_exit_and_output_truncation_are_visible ... ok
+test run_command_yields_a_live_handle_and_cursor_before_completion ... ok
+test waiting_command_streams_unterminated_stdout_and_stderr_before_its_result ... ok
+test timeout_cancellation_and_disconnect_stop_descendants ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 8.52s
+
+     Running tests\connect.rs (target\debug\deps\connect-dfa5940772b27786.exe)
+
+running 1 test
+test config_preview_is_valid_codex_toml_and_needs_no_connection ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\hub.rs (target\debug\deps\hub-a8cd9ce496034a44.exe)
+
+running 1 test
+test local_hub_reports_offline_devices_and_preserves_unpaired_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.20s
+
+     Running tests\install.rs (target\debug\deps\install-bec02c78c61efd4e.exe)
+
+running 2 tests
+test install_help_does_not_require_windows_or_write_files ... ok
+test native_install_runs_mcp_and_update_preserves_config ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.59s
+
+     Running tests\memory.rs (target\debug\deps\memory-85cef8a38c181004.exe)
+
+running 3 tests
+test memory_stdio_requires_explicit_file_permission ... ok
+test memory_stdio_denies_unregistered_paths_invalid_data_and_missing_revision ... ok
+test memory_stdio_round_trip_conflicts_and_restart_share_file_contents ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests\process_control.rs (target\debug\deps\process_control-e56febb69eb64d03.exe)
+
+running 7 tests
+test application ... ignored, process control 테스트가 환경을 준비한 뒤 실행하는 fixture
+test delayed_application ... ignored, long-poll 테스트가 환경을 준비한 뒤 실행하는 fixture
+test snapshot_application ... ignored, source snapshot 테스트용 subprocess fixture
+test sync_restart_is_opt_in_and_same_revision_does_not_restart ... ok
+test verified_build_snapshot_is_not_changed_by_next_sync ... ok
+test long_poll_wakes_for_output_and_completion_and_preserves_cursor_replay ... ok
+test live_output_reconnect_handles_stop_restart_and_host_cleanup ... ok
+
+test result: ok. 4 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 1.69s
+
+     Running tests\protocol.rs (target\debug\deps\protocol-6416b9272212cdf6.exe)
+
+running 3 tests
+test fixture::process ... ignored, MCP 테스트가 환경을 준비한 뒤 실행하는 subprocess fixture
+test cli_diagnostics_are_korean_and_do_not_pollute_protocol_stdout ... ok
+test discovery_execution_and_input_policy_work_over_stdio ... ok
+
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests\sync_flow.rs (target\debug\deps\sync_flow-d49d75caeb374c8f.exe)
+
+running 2 tests
+test command_fixture ... ignored, sync flow 테스트가 환경을 준비한 뒤 실행하는 fixture
+test sync_then_fresh_wait_gates_build_test_run_and_reports_conflict_offline ... ok
+
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 5.00s
+
+     Running unittests src\main.rs (target\debug\deps\xtask-65d98a3ba448685e.exe)
+
+running 3 tests
+test tests::style_is_idempotent_and_preserves_raw_strings_imports_and_macros ... ok
+test tests::explicit_horizontal_signature_survives_the_full_pipeline ... ok
+test tests::horizontal_signature_restoration_leaves_other_signatures_and_literals_to_rustfmt ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+   Doc-tests w7bridge
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+COMMAND cargo build --locked
+   Compiling w7bridge v0.1.0 (D:\w7bridge-2158-c5bdf24d719f)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.27s
+W7BRIDGE_NATIVE_END

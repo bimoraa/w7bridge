@@ -1,0 +1,20 @@
+{
+  "process_id": "1790791025517579500-4",
+  "reused_handle": true,
+  "command_replayed": false,
+  "result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-KhhBbA",
+    "exit_code": 0,
+    "revision_at_completion": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+    "revision_at_start": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-KhhBbA)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.29s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+    "stderr_truncated": false,
+    "stdout": "STDOUT_1STDOUT_2",
+    "stdout_truncated": false,
+    "success": true
+  }
+}
