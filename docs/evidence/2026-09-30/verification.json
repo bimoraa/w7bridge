@@ -1,0 +1,128 @@
+{
+  "recorded_at_utc": "2026-09-30T16:54:42.126973+00:00",
+  "branch": "codex/sync-safety-e2e",
+  "starting_commit": "5d61bad",
+  "source_id": "0c0074ed2a4a8444b0727d9fc629ef5bdd8f0fad306c4751abb473fa0051969c",
+  "windows_binary_sha256": "dd040293aee8ddb0265a4be75c91799147a4a44ffcd55edc763a1918093b021e",
+  "mac_binary_sha256": "b18673ed7067157fa99b93848881b670cbf4c7fc9aa9685723074a6db8e5c0ad",
+  "windows_gate_commands": [
+    {
+      "command": [
+        "cargo",
+        "--version"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "rustc",
+        "--version"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "xtask",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--workspace",
+        "--all-targets"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "build",
+        "--locked"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "mac_gates_passed": [
+    "cargo run --locked -p xtask -- --check",
+    "cargo check --locked --workspace --all-targets",
+    "cargo clippy --locked --workspace --all-targets -- -D warnings",
+    "cargo test --locked --workspace"
+  ],
+  "e2e": {
+    "status": "passed",
+    "compiled_revision": "mac-edit-v2",
+    "project_revision_sha256": "79e66fa1039431a0905f35c70de5db6a81b7789e2caaaaf6f259a674d853a0d7",
+    "revision_file_sha256": "51d04fac605d27a22c3ac56e9803e8e2199c9d693f6f340110fb99a322b47391",
+    "commands": {
+      "check": {
+        "process_id": "1790786716720700400-1",
+        "exit_code": 0,
+        "revision_verified": true
+      },
+      "build": {
+        "process_id": "1790786719786089200-2",
+        "exit_code": 0,
+        "revision_verified": true
+      },
+      "test": {
+        "process_id": "1790786722900440900-3",
+        "exit_code": 0,
+        "revision_verified": true
+      }
+    },
+    "reconnect": "existing completed command handles and running app log recovered after hub transport close",
+    "run_process_id": "1790786726081808200-4",
+    "app_cancelled": true,
+    "screenshot": {
+      "path": "windows-verified.png",
+      "width": 2560,
+      "height": 1440,
+      "sha256": "e86a1c4e42c82107962f4255b53bf14c578e3186ec296910440d3041aa4379dd",
+      "visually_checked_compiled_revision": true
+    }
+  },
+  "permanent_installation_modified": false,
+  "changes_after_native_snapshot": {
+    "xtask/scripts/fixture_windows.py": "d506a051e9db3108b3930cef2fba70182bd7b3eb84bf233dab0e5899a8849315",
+    "xtask/scripts/verify_e2e.py": "b707ca01ba607b8d2e7351b0636ede374db7757bf0b6fe80e34d069fa74c7bd8"
+  },
+  "temporary_service_removed": true,
+  "temporary_tasks_removed": [
+    "w7bridge-2158-fixture",
+    "w7bridge-2158-junction",
+    "w7bridge-2158-native",
+    "w7bridge-2158-render",
+    "w7bridge-2158-sshd-restart"
+  ]
+}

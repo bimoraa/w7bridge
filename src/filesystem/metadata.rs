@@ -1,5 +1,6 @@
 /*! 파일 manifest, 내부 metadata와 process 간 lock을 소유해. */
 
+use super::paths::redirected;
 use super::transfer::FileStore;
 use crate::FileError;
 use fs2::FileExt;
@@ -55,7 +56,7 @@ impl FileStore {
         let directory = self.root.join(".w7bridge");
         match fs::symlink_metadata(&directory) {
 
-            Ok(metadata) if metadata.is_symlink() || !metadata.is_dir() => return Err(FileError::Path),
+            Ok(metadata) if redirected(&metadata) || !metadata.is_dir() => return Err(FileError::Path),
             Ok(_) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => fs::create_dir(&directory)?,
             Err(error) => return Err(error.into()),
@@ -65,22 +66,50 @@ impl FileStore {
 
     }
 
-    /** 같은 metadata 이름의 작업을 OS file lock으로 직렬화한다. 다른 process가 소유하면 기다리지 않는다. */
+    /** 같은 metadata 이름의 작업을 직렬화한다. spawn 직후의 짧은 경합은 최대 100 ms만 기다린다. */
     pub fn lock(&self, name: &str) -> Result<File, FileError> {
 
-        if !matches!(name, "access.lock" | "sync.lock") {
+        let pair_lock = name.strip_prefix("sync-").and_then(|name| name.strip_suffix(".lock")).is_some_and(|hash| {
+
+            hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+
+        });
+        if !matches!(name, "access.lock" | "sync.lock" | "transfer.lock" | "git.lock") && !pair_lock {
 
             return Err(FileError::Path);
 
         }
         let path = self.metadata_dir()?.join(name);
-        if fs::symlink_metadata(&path).is_ok_and(|metadata| metadata.is_symlink()) {
+        if fs::symlink_metadata(&path).is_ok_and(|metadata| redirected(&metadata) || !metadata.is_file()) {
 
             return Err(FileError::Path);
 
         }
         let file = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(path)?;
-        file.try_lock_exclusive().map_err(|_| FileError::Busy)?;
+        let started = std::time::Instant::now();
+        loop {
+
+            match file.try_lock_exclusive() {
+
+                Ok(()) => break,
+                Err(error)
+                    if error.kind() == std::io::ErrorKind::WouldBlock
+                        || error.raw_os_error() == fs2::lock_contended_error().raw_os_error() =>
+                {
+
+                    if started.elapsed() >= std::time::Duration::from_millis(100) {
+
+                        return Err(FileError::Busy);
+
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+
+                }
+                Err(error) => return Err(error.into()),
+
+            }
+
+        }
         Ok(file)
 
     }
@@ -91,13 +120,13 @@ impl FileStore {
         let path = self.metadata_path(name)?;
         match fs::symlink_metadata(&path) {
 
-            Ok(metadata) if metadata.is_symlink() || !metadata.is_file() => Err(FileError::Path),
-            Ok(metadata) if metadata.len() > 16 * 1024 * 1024 => Err(FileError::Limit),
+            Ok(metadata) if redirected(&metadata) || !metadata.is_file() => Err(FileError::Path),
+            Ok(metadata) if metadata.len() > 64 * 1024 * 1024 => Err(FileError::Limit),
             Ok(_) => {
 
                 let mut bytes = Vec::new();
-                File::open(path)?.take(16 * 1024 * 1024 + 1).read_to_end(&mut bytes)?;
-                if bytes.len() > 16 * 1024 * 1024 {
+                File::open(path)?.take(64 * 1024 * 1024 + 1).read_to_end(&mut bytes)?;
+                if bytes.len() > 64 * 1024 * 1024 {
 
                     return Err(FileError::Limit);
 
@@ -116,12 +145,12 @@ impl FileStore {
     pub fn save_metadata(&self, name: &str, content: &[u8]) -> Result<(), FileError> {
 
         let path = self.metadata_path(name)?;
-        if content.len() > 16 * 1024 * 1024 {
+        if content.len() > 64 * 1024 * 1024 {
 
             return Err(FileError::Limit);
 
         }
-        if fs::symlink_metadata(&path).is_ok_and(|metadata| metadata.is_symlink() || !metadata.is_file()) {
+        if fs::symlink_metadata(&path).is_ok_and(|metadata| redirected(&metadata) || !metadata.is_file()) {
 
             return Err(FileError::Path);
 
@@ -139,7 +168,8 @@ impl FileStore {
         if name.is_empty()
             || name.len() > 160
             || !name.bytes().all(|byte| byte.is_ascii_alphanumeric() || b"-_.".contains(&byte))
-            || matches!(name, "." | ".." | "access.lock" | "sync.lock")
+            || matches!(name, "." | ".." | "access.lock" | "sync.lock" | "transfer.lock" | "git.lock")
+            || name.ends_with(".lock")
         {
 
             return Err(FileError::Path);

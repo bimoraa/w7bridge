@@ -3,7 +3,7 @@
 use crate::error::ExecutionError;
 use std::io;
 mod command;
-mod process;
+pub(crate) mod process;
 mod runner;
 mod sandbox;
 pub(crate) use process::Processes;

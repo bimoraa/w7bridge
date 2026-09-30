@@ -3,7 +3,9 @@
 mod loader;
 mod model;
 pub(crate) mod paths;
-pub(crate) use model::{CodexSettings, CommandDefinition, ExecutionLimits, Pair, ProjectDefinition, SyncSettings};
+pub(crate) use model::{
+    CodexSettings, CommandDefinition, DiscoverySettings, ExecutionLimits, Pair, ProjectDefinition, SyncSettings,
+};
 pub use model::{Config, FileSettings};
 
 #[cfg(test)]

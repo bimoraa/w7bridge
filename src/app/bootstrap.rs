@@ -9,6 +9,32 @@ use std::{ffi::OsString, path::PathBuf};
 pub async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.first().is_some_and(|arg| arg == "hub") {
+
+        if matches!(&args[1..],[flag] if flag=="--help"||flag=="-h") {
+
+            println!(
+                "사용법: w7bridge hub --config <pairing TOML>\n로컬 MCP가 sync를 유지하고 device/project별 status·command·log를 전달합니다"
+            );
+            return Ok(());
+
+        }
+        let [flag, path] = &args[1..] else { return Err("hub --help로 인자를 확인하세요".into()) };
+        if flag != "--config" {
+
+            return Err("hub --help로 인자를 확인하세요".into());
+
+        }
+        let settings: crate::config::SyncSettings = toml::from_str(&std::fs::read_to_string(path)?)?;
+        super::lifecycle::validate_sync_settings(&settings)?;
+        return crate::server::hub::run(settings).await;
+
+    }
+    if args.first().is_some_and(|arg| arg == "update") {
+
+        return crate::update::run(&args[1..]).await;
+
+    }
     if args.first().is_some_and(|arg| arg == "install") {
 
         return run_install(&args[1..]).map_err(Into::into);

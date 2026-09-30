@@ -6,6 +6,8 @@ use serde::Deserialize;
 pub(crate) struct ListArgs {
 
     pub project_id: String,
+    #[serde(default)]
+    pub protocol_version: Option<u32>,
 
 }
 

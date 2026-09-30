@@ -22,6 +22,7 @@ pub(super) async fn wait(
     coordinator: &Coordinator,
     args: Map<String, Value>,
     token: CancellationToken,
+    peer: Option<&str>,
 ) -> Result<Result<Value, String>, ErrorData> {
 
     let args: Arguments = serde_json::from_value(Value::Object(args))
@@ -32,6 +33,6 @@ pub(super) async fn wait(
         Err(error) => return Ok(Err(error.to_string())),
 
     };
-    Ok(coordinator.wait(&args.project_id, &files, args.timeout_seconds, token).await)
+    Ok(coordinator.wait_peer(&args.project_id, &files, args.timeout_seconds, token, peer).await)
 
 }

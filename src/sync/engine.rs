@@ -14,6 +14,7 @@ pub struct Session {
 
     pub(super) local: FileStore,
     pub(super) state: State,
+    metadata_name: String,
 
 }
 
@@ -22,7 +23,33 @@ impl Session {
     /** 기존 baseline을 읽거나 새 pairing을 시작한다. 다른 peer로 재사용하면 실패한다. */
     pub fn open(local: FileStore, binding: String) -> Result<Self, SyncError> {
 
-        let state = match local.load_metadata("sync.json")? {
+        Self::open_named(local, binding, "sync.json".into())
+
+    }
+
+    pub(crate) fn open_pair( local: FileStore, binding: String, ) -> Result<Self,SyncError> {
+
+        let name = format!("sync-{}.json", digest(binding.as_bytes()));
+        if local.load_metadata(&name)?.is_none()
+            && let Some(bytes) = local.load_metadata("sync.json")?
+        {
+
+            let previous: State = serde_json::from_slice(&bytes).map_err(|_| SyncError::State)?;
+            if previous.binding == binding {
+
+                manifest::validate_state(&local, &previous)?;
+                local.save_metadata(&name, &bytes)?;
+
+            }
+
+        }
+        Self::open_named(local, binding, name)
+
+    }
+
+    fn open_named( local: FileStore, binding: String, metadata_name: String, ) -> Result<Self,SyncError> {
+
+        let state = match local.load_metadata(&metadata_name)? {
 
             Some(bytes) => {
 
@@ -49,7 +76,7 @@ impl Session {
             },
 
         };
-        Ok(Self { local, state })
+        Ok(Self { local, state, metadata_name })
 
     }
 
@@ -85,6 +112,21 @@ impl Session {
 
     }
 
+    pub(crate) fn files( &self, ) -> &FileStore {
+
+        &self.local
+
+    }
+
+    pub(crate) fn git_conflict( &mut self, reason: &str, ) -> Result<(),SyncError> {
+
+        self.state.report.status = Status::Conflict;
+        self.state.report.error = Some(reason.into());
+        self.state.report.observed_at = now();
+        self.save()
+
+    }
+
     /** 파일이 계속 바뀌는 round의 상태를 저장한다. baseline은 유지한다. */
     pub fn syncing(&mut self, reason: &str) -> Result<(), SyncError> {
 
@@ -114,7 +156,8 @@ impl Session {
         self.state.report.observed_at = now();
         self.state.report.error = None;
         self.save()?;
-        let local = hashes(&self.local.list()?);
+        let local_entries = self.local.list()?;
+        let local = hashes(&local_entries);
         let remote_entries = peer.list().await?;
         manifest::validate(&self.local, &local, &remote_entries)?;
         let remote = hashes(&remote_entries);
@@ -135,6 +178,21 @@ impl Session {
 
         }
         let paths: BTreeSet<_> = local.keys().chain(remote.keys()).chain(self.state.baseline.keys()).cloned().collect();
+        let sizes: BTreeMap<_, _> =
+            local_entries.iter().chain(&remote_entries).map(|entry| (&entry.path, entry.bytes)).collect();
+        let mut paths: Vec<_> = paths.into_iter().collect();
+        paths.sort_by_key(|path| {
+
+            let deletion =
+                self.state.baseline.contains_key(path) && (!local.contains_key(path) || !remote.contains_key(path));
+            let source = path.starts_with("src/")
+                || matches!(path.as_str(), "AGENTS.md" | "MEMORY.md" | "PLANS.md" | "Cargo.toml" | "package.json")
+                || [".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".swift", ".lua"]
+                    .iter()
+                    .any(|extension| path.ends_with(extension));
+            (deletion, !source, sizes.get(path).copied().unwrap_or(usize::MAX), path.clone())
+
+        });
         let mut conflicts = Vec::new();
         for path in paths {
 
@@ -187,6 +245,11 @@ impl Session {
 
                 Ok(()) => {
 
+                    if !remote_target && let Some(hash) = source {
+
+                        self.local.complete_staging(&path, hash)?;
+
+                    }
                     self.state.baseline.insert(path, source.clone());
                     self.state.pending = None;
                     self.save()?;
@@ -252,7 +315,7 @@ impl Session {
             };
 
         };
-        let content = if remote { peer.read(path).await? } else { self.local.read(path)? };
+        let content = if remote { peer.read_reusing(path, &self.local).await? } else { self.local.read(path)? };
         if digest(&content) != hash {
 
             return Err(SyncError::File(FileError::Conflict));
@@ -264,7 +327,7 @@ impl Session {
 
     fn save(&self) -> Result<(), SyncError> {
 
-        self.local.save_metadata("sync.json", &serde_json::to_vec(&self.state)?)?;
+        self.local.save_metadata(&self.metadata_name, &serde_json::to_vec(&self.state)?)?;
         Ok(())
 
     }

@@ -1,0 +1,12 @@
+FIXTURE_BEGIN
+
+SERVICE_NAME: w7bridge 
+        TYPE               : 10  WIN32_OWN_PROCESS  
+        STATE              : 3  STOP_PENDING 
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x1
+        WAIT_HINT          : 0x3a98
+[SC] DeleteService SUCCESS
+OWNED_SERVICE_REMOVED

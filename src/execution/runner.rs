@@ -35,14 +35,9 @@ impl Executor {
 
     }
 
-    pub async fn run(
-        &self,
-        root: &Path,
-        definition: &CommandDefinition,
-        cancellation: CancellationToken,
-    ) -> Result<Output, ExecutionError> {
+    pub fn available_slots( &self, ) -> usize {
 
-        self.run_observed(root, definition, cancellation, None, None).await
+        self.slots.available_permits()
 
     }
 

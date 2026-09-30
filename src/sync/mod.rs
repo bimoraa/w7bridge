@@ -6,7 +6,7 @@ mod conflict;
 mod engine;
 mod manifest;
 mod planner;
-mod state;
+pub(crate) mod state;
 pub use crate::error::filesystem::SyncError;
 pub use engine::Session;
 pub(crate) use state::coordination::{Checkpoint, Coordinator};
@@ -16,6 +16,11 @@ pub trait Peer {
 
     fn list(&self) -> impl Future<Output = Result<Vec<FileEntry>, SyncError>> + Send;
     fn read(&self, path: &str) -> impl Future<Output = Result<Vec<u8>, SyncError>> + Send;
+    fn read_reusing( &self, path: &str, _local: &crate::filesystem::FileStore, ) -> impl Future<Output=Result<Vec<u8>,SyncError>> + Send {
+
+        self.read(path)
+
+    }
     fn write(
         &self,
         path: &str,

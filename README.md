@@ -9,6 +9,8 @@ Mac MCP 클라이언트 → SSH → Windows w7bridge
                             → MCP 도구 → registry → executor → 등록된 명령
 ```
 
+새 device/project hub, preset, chunk resume, history, Git handoff와 signed updater 설정은 [작업 흐름](docs/bridge_workflow.md)에 있다. 이번 source의 검증 범위는 [기능 수용 기준](docs/feature_acceptance.md)을 확인한다.
+
 ## 초기 범위와 구조
 
 서버 package에 library와 CLI를 두고, `xtask` package는 개발 도구만 담당한다. 별도 database, plugin system, scheduler는 현재 필요하지 않다. Codex의 기존 database는 project metadata를 읽는 용도로만 사용한다.
@@ -29,6 +31,8 @@ Mac MCP 클라이언트 → SSH → Windows w7bridge
 | `protocol` | 도구 입력과 실행 결과의 wire 타입 |
 | `sync` | baseline, journal, 충돌 보존과 전송 계획 |
 | `memory` | context 문서 읽기·조건부 갱신과 파일 revision; 기존 FileStore 재사용 |
+| `git` | bundle/index 기반 조건부 Git metadata 인계와 recovery |
+| `update` | owner trust key, signed HTTPS release와 binary rollback |
 
 사용자가 지정한 source tree와 이전 경로의 이동 계약은 [source 구조](docs/source_structure.md)에 있다. 미구현 모듈은 문서만 두고 도구를 등록하지 않는다.
 

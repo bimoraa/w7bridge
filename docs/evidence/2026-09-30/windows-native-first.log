@@ -1,0 +1,226 @@
+W7BRIDGE_NATIVE_BEGIN
+COMMAND cargo --version
+cargo 1.97.1 (c980f4866 2026-06-30)
+COMMAND rustc --version
+rustc 1.97.1 (8bab26f4f 2026-07-14)
+COMMAND cargo run --locked -p xtask -- --check
+    Updating crates.io index
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.26
+   Compiling quote v1.0.47
+   Compiling syn v2.0.119
+   Compiling xtask v0.1.0 (D:\w7bridge-2158-c5bdf24d719f\xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 03s
+     Running `target\debug\xtask.exe --check`
+COMMAND cargo check --locked --workspace --all-targets
+ Downloading crates ...
+  Downloaded cpufeatures v0.3.1
+  Downloaded fallible-streaming-iterator v0.1.9
+  Downloaded lru-slab v0.1.3
+  Downloaded zerofrom-derive v0.1.8
+  Downloaded yoke-derive v0.8.4
+  Downloaded hyper-util v0.1.21
+  Downloaded hyper-rustls v0.27.10
+  Downloaded ipnet v2.12.2
+  Downloaded fallible-iterator v0.3.0
+  Downloaded synstructure v0.14.0
+  Downloaded find-msvc-tools v0.1.14
+  Downloaded tokio-rustls v0.26.6
+  Downloaded chacha20 v0.10.2
+  Downloaded quinn-udp v0.5.16
+  Downloaded smallvec v1.16.2
+  Downloaded tinyvec v1.13.3
+  Downloaded quinn v0.11.12
+  Downloaded base64 v0.23.1
+  Downloaded rand v0.10.3
+  Downloaded cc v1.5.1
+  Downloaded reqwest v0.12.28
+  Downloaded hyper v1.11.1
+  Downloaded rusqlite v0.40.2
+  Downloaded vcpkg v0.2.15
+  Downloaded webpki-roots v1.0.9
+  Downloaded quinn-proto v0.11.19
+  Downloaded rustls v0.23.45
+  Downloaded libsqlite3-sys v0.38.2
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.26
+   Compiling quote v1.0.47
+    Checking windows-link v0.2.1
+    Checking pin-project-lite v0.2.17
+    Checking futures-core v0.3.34
+    Checking bytes v1.12.1
+    Checking stable_deref_trait v1.2.1
+   Compiling serde_core v1.0.229
+   Compiling find-msvc-tools v0.1.14
+   Compiling shlex v2.0.1
+    Checking cfg-if v1.0.5
+    Checking futures-sink v0.3.34
+    Checking memchr v2.8.3
+    Checking itoa v1.0.18
+    Checking smallvec v1.16.2
+    Checking slab v0.4.12
+    Checking futures-task v0.3.34
+    Checking futures-io v0.3.34
+    Checking zeroize v1.9.0
+    Checking once_cell v1.21.4
+   Compiling version_check v0.9.5
+    Checking litemap v0.8.3
+    Checking writeable v0.6.4
+   Compiling icu_normalizer_data v2.3.0
+    Checking utf8_iter v1.0.4
+   Compiling icu_properties_data v2.3.0
+   Compiling serde v1.0.229
+    Checking typenum v1.20.1
+    Checking percent-encoding v2.3.2
+    Checking untrusted v0.9.0
+   Compiling httparse v1.10.1
+    Checking getrandom v0.2.17
+    Checking windows-sys v0.61.2
+    Checking windows-result v0.4.1
+    Checking windows-strings v0.5.1
+    Checking subtle v2.6.1
+   Compiling autocfg v1.5.1
+   Compiling rustls v0.23.45
+    Checking rustls-pki-types v1.15.1
+   Compiling libc v0.2.189
+    Checking tower-service v0.3.3
+   Compiling getrandom v0.4.3
+    Checking try-lock v0.2.5
+   Compiling zmij v1.0.23
+   Compiling semver v1.0.28
+    Checking http v1.5.0
+    Checking tracing-core v0.1.36
+    Checking futures-channel v0.3.34
+    Checking bitflags v2.13.2
+   Compiling ref-cast v1.0.27
+   Compiling vcpkg v0.2.15
+   Compiling serde_json v1.0.151
+   Compiling pkg-config v0.3.34
+    Checking atomic-waker v1.1.2
+    Checking sync_wrapper v1.0.2
+    Checking want v0.3.1
+    Checking windows-threading v0.2.1
+    Checking cpufeatures v0.2.17
+    Checking hashbrown v0.17.1
+    Checking base64 v0.23.1
+    Checking equivalent v1.0.2
+   Compiling rustc_version v0.4.1
+   Compiling cc v1.5.1
+   Compiling generic-array v0.14.7
+   Compiling winapi v0.3.9
+   Compiling num-traits v0.2.19
+    Checking ipnet v2.12.2
+   Compiling thiserror v2.0.21
+    Checking tower-layer v0.3.3
+   Compiling rmcp v3.5.0
+    Checking dyn-clone v1.0.20
+    Checking ryu v1.0.23
+    Checking winnow v1.0.4
+    Checking signature v2.2.0
+    Checking widestring v1.2.1
+    Checking form_urlencoded v1.2.2
+    Checking toml_writer v1.1.2+spec-1.1.0
+   Compiling syn v3.0.6
+   Compiling syn v2.0.119
+    Checking ed25519 v2.2.3
+   Compiling pastey v0.2.3
+    Checking fallible-streaming-iterator v0.1.9
+    Checking fastrand v2.5.0
+    Checking toml_parser v1.1.3+spec-1.1.0
+    Checking log v0.4.34
+    Checking base64 v0.22.1
+    Checking http-body v1.1.0
+    Checking fallible-iterator v0.3.0
+    Checking uuid v1.26.1
+    Checking indexmap v2.14.2
+    Checking toml_datetime v1.1.1+spec-1.1.0
+   Compiling curve25519-dalek v4.1.3
+    Checking serde_spanned v1.1.1
+    Checking webpki-roots v1.0.9
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking socket2 v0.6.5
+    Checking mio v1.2.3
+    Checking windows-service v0.8.1
+    Checking tempfile v3.27.0
+    Checking http-body-util v0.1.5
+    Checking digest v0.10.7
+   Compiling ring v0.17.14
+   Compiling libsqlite3-sys v0.38.2
+    Checking toml v1.1.6+spec-1.1.0
+    Checking fs2 v0.4.3
+    Checking sha2 v0.10.9
+   Compiling windows-implement v0.60.2
+   Compiling windows-interface v0.59.3
+   Compiling tracing-attributes v0.1.31
+   Compiling curve25519-dalek-derive v0.1.1
+    Checking xtask v0.1.0 (D:\w7bridge-2158-c5bdf24d719f\xtask)
+    Checking rusqlite v0.40.2
+    Checking windows-core v0.62.2
+    Checking tracing v0.1.44
+    Checking windows-collections v0.3.2
+    Checking windows-future v0.3.2
+    Checking windows-numerics v0.3.1
+    Checking ed25519-dalek v2.2.0
+    Checking windows v0.62.2
+   Compiling synstructure v0.14.0
+   Compiling serde_derive_internals v0.30.0
+   Compiling zerovec-derive v0.11.6
+   Compiling displaydoc v0.2.7
+   Compiling tokio-macros v2.7.2
+   Compiling futures-macro v0.3.34
+   Compiling serde_derive v1.0.229
+   Compiling ref-cast-impl v1.0.27
+   Compiling thiserror-impl v2.0.21
+    Checking rustls-webpki v0.103.15
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling schemars_derive v1.2.2
+    Checking tokio v1.53.1
+    Checking futures-util v0.3.34
+    Checking zerofrom v0.1.8
+    Checking yoke v0.8.3
+    Checking zerovec v0.11.8
+    Checking zerotrie v0.2.5
+    Checking chrono v0.4.45
+    Checking serde_urlencoded v0.7.1
+    Checking tinystr v0.8.4
+    Checking potential_utf v0.1.6
+    Checking icu_collections v2.3.0
+    Checking icu_locale_core v2.3.0
+    Checking futures-executor v0.3.34
+    Checking futures v0.3.34
+    Checking schemars v1.2.2
+    Checking hyper v1.11.1
+    Checking tower v0.5.3
+    Checking tokio-rustls v0.26.6
+    Checking tokio-stream v0.1.19
+    Checking tokio-util v0.7.19
+    Checking process-wrap v10.0.1
+    Checking icu_provider v2.3.1
+    Checking icu_normalizer v2.3.0
+    Checking icu_properties v2.3.0
+    Checking hyper-util v0.1.21
+    Checking idna_adapter v1.2.2
+    Checking hyper-rustls v0.27.10
+    Checking idna v1.1.0
+    Checking url v2.5.8
+    Checking tower-http v0.6.11
+    Checking reqwest v0.12.28
+    Checking w7bridge v0.1.0 (D:\w7bridge-2158-c5bdf24d719f)
+error: couldn't read `src\filesystem\../../w7bridge.example.toml`: The system cannot find the file specified. (os error 2)
+  --> src\filesystem\copy.rs:46:9
+   |
+46 |         include_str!("../../w7bridge.example.toml").into()
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: could not compile `w7bridge` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: couldn't read `src\config\..\..\tests\unit\../../w7bridge.example.toml`: The system cannot find the file specified. (os error 2)
+ --> src\config\..\..\tests\unit\config.rs:6:32
+  |
+6 |     let config = Config::parse(include_str!("../../w7bridge.example.toml")).unwrap();
+  |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: could not compile `w7bridge` (lib test) due to 2 previous errors
+W7BRIDGE_NATIVE_END

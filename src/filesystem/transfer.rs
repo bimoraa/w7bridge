@@ -2,7 +2,7 @@
 
 use super::{
     metadata::{FileEntry, digest},
-    paths::validate_paths,
+    paths::{redirected, validate_paths},
 };
 use crate::{FileError, config::FileSettings};
 use std::{
@@ -73,7 +73,7 @@ impl FileStore {
 
             }
             let metadata = fs::symlink_metadata(&path)?;
-            if metadata.is_symlink() {
+            if redirected(&metadata) {
 
                 return Err(FileError::Path);
 
@@ -104,7 +104,7 @@ impl FileStore {
 
     }
 
-    /** 파일 전체를 최대 1 MiB까지 읽는다. symlink, special file과 제외 경로는 거부한다. */
+    /** 설정된 파일 한도까지 읽는다. symlink, special file과 제외 경로는 거부한다. */
     pub fn read(&self, path: &str) -> Result<Vec<u8>, FileError> {
 
         let _lock = self.lock("access.lock")?;
@@ -112,7 +112,7 @@ impl FileStore {
 
     }
 
-    fn read_unlocked(&self, path: &str) -> Result<Vec<u8>, FileError> {
+    pub(super) fn read_unlocked(&self, path: &str) -> Result<Vec<u8>, FileError> {
 
         let resolved = self.resolve(path, false)?;
         if !fs::symlink_metadata(&resolved)?.is_file() {
@@ -121,14 +121,14 @@ impl FileStore {
 
         }
         let file = File::open(resolved)?;
-        if file.metadata()?.len() > 1_048_576 {
+        if file.metadata()?.len() > self.settings.max_file_bytes as u64 {
 
             return Err(FileError::Limit);
 
         }
         let mut content = Vec::new();
-        file.take(1_048_577).read_to_end(&mut content)?;
-        if content.len() > 1_048_576 {
+        file.take(self.settings.max_file_bytes as u64 + 1).read_to_end(&mut content)?;
+        if content.len() > self.settings.max_file_bytes {
 
             return Err(FileError::Limit);
 
@@ -147,30 +147,49 @@ impl FileStore {
         expected: Option<&str>,
     ) -> Result<Option<String>, FileError> {
 
+        if !self.permits(path) {
+
+            return Err(FileError::Path);
+
+        }
         let _lock = self.lock("access.lock")?;
-        if content.is_some_and(|bytes| bytes.len() > 1_048_576) {
+        if content.is_some_and(|bytes| bytes.len() > self.settings.max_file_bytes) {
 
             return Err(FileError::Limit);
 
         }
         let resolved = self.resolve(path, true)?;
-        let current = match self.read_unlocked(path) {
+        let previous = match self.read_unlocked(path) {
 
-            Ok(bytes) => Some(digest(&bytes)),
+            Ok(bytes) => Some(bytes),
             Err(FileError::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => None,
             Err(error) => return Err(error),
 
         };
+        let current = previous.as_deref().map(digest);
         if current.as_deref() != expected {
 
             return Err(FileError::Conflict);
+
+        }
+        if previous.as_deref() == content {
+
+            return Ok(current);
 
         }
         let Some(content) = content else {
 
             if current.is_some() {
 
+                let revision = self.prepare_revision(path, previous.as_deref(), None)?;
+                let latest = self.read_unlocked(path)?;
+                if Some(digest(&latest)).as_deref() != expected {
+
+                    return Err(FileError::Conflict);
+
+                }
                 fs::remove_file(resolved)?;
+                self.commit_revision(revision)?;
 
             }
             return Ok(None);
@@ -199,6 +218,19 @@ impl FileStore {
             return Err(FileError::Conflict);
 
         }
+        let revision = self.prepare_revision(path, previous.as_deref(), Some(content))?;
+        let latest = match self.read_unlocked(path) {
+
+            Ok(bytes) => Some(digest(&bytes)),
+            Err(FileError::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error),
+
+        };
+        if latest.as_deref() != expected {
+
+            return Err(FileError::Conflict);
+
+        }
         self.resolve(path, true)?;
         if current.is_none() {
 
@@ -221,6 +253,7 @@ impl FileStore {
             temporary.persist(resolved).map_err(|error| FileError::Io(error.error))?;
 
         }
+        self.commit_revision(revision)?;
         Ok(Some(digest(content)))
 
     }

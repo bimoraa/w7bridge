@@ -32,6 +32,8 @@ struct Read {
     process_id: String,
     #[serde(default)]
     cursor: u64,
+    #[serde(default)]
+    wait_seconds: u64,
 
 }
 
@@ -42,7 +44,12 @@ pub(crate) fn definitions() -> Vec<Tool> {
         let mut properties = json!({ "project_id": {"type": "string"} });
         let selector = if name == "start_process" { "command" } else { "process_id" };
         if name != "list_processes" { properties[selector] = json!({"type": "string"}); }
-        if name == "read_process_output" { properties["cursor"] = json!({"type": "integer", "minimum": 0}); }
+        if name == "read_process_output" {
+
+            properties["cursor"] = json!({"type": "integer", "minimum": 0});
+            properties["wait_seconds"] = json!({"type": "integer", "minimum": 0, "maximum": 30});
+
+        }
         let schema = json!({"type": "object", "properties": properties, "required": if name == "list_processes" { vec!["project_id"] } else { vec!["project_id", selector] }, "additionalProperties": false});
         Tool::new(name, "등록된 명령의 process 수명과 cursor 기반 live output을 처리합니다", schema.as_object().cloned().unwrap_or_default())
             .with_annotations(ToolAnnotations::new().read_only(matches!(name, "read_process_output" | "list_processes"))
@@ -59,6 +66,7 @@ pub(crate) async fn call(
     name: &str,
     args: Map<String, Value>,
     cancellation: tokio_util::sync::CancellationToken,
+    peer: Option<&str>,
 ) -> Result<CallToolResult, ErrorData> {
 
     let invalid = || ErrorData::invalid_params("project_id와 process 도구 인자를 확인하세요", None);
@@ -85,14 +93,14 @@ pub(crate) async fn call(
         "start_process" => {
 
             let args: Start = serde_json::from_value(Value::Object(args)).map_err(|_| invalid())?;
-            match coordinator.gate(policy, &args.project_id, cancellation.clone()).await {
+            match coordinator.gate_peer(policy, &args.project_id, cancellation.clone(), peer).await {
 
-                Ok(()) if !cancellation.is_cancelled() => {
+                Ok(revision) if !cancellation.is_cancelled() => {
 
-                    processes.start(policy, &args.project_id, &args.command).await
+                    processes.start(policy, &args.project_id, &args.command, revision.as_deref()).await
 
                 }
-                Ok(()) => Err("시작 요청이 취소되었습니다".into()),
+                Ok(_) => Err("시작 요청이 취소되었습니다".into()),
                 Err(error) => Err(error),
 
             }
@@ -101,7 +109,7 @@ pub(crate) async fn call(
         "read_process_output" => {
 
             let args: Read = serde_json::from_value(Value::Object(args)).map_err(|_| invalid())?;
-            processes.read(&args.project_id, &args.process_id, args.cursor)
+            processes.read_wait(&args.project_id, &args.process_id, args.cursor, args.wait_seconds, cancellation).await
 
         }
         _ => {
@@ -113,9 +121,13 @@ pub(crate) async fn call(
 
             } else {
 
-                match coordinator.gate(policy, &args.project_id, cancellation).await {
+                match coordinator.gate_peer(policy, &args.project_id, cancellation, peer).await {
 
-                    Ok(()) => processes.restart(policy, &args.project_id, &args.process_id).await,
+                    Ok(revision) => {
+
+                        processes.restart(policy, &args.project_id, &args.process_id, revision.as_deref()).await
+
+                    }
                     Err(error) => Err(error),
 
                 }

@@ -14,7 +14,7 @@ pub enum FileError {
     Busy,
     #[error("파일 작업이 시작되기 전에 요청이 취소되었습니다")]
     Cancelled,
-    #[error("파일 공유 한도를 초과했습니다 (파일 1 MiB, 10000개, 합계 256 MiB)")]
+    #[error("파일 공유 한도를 초과했습니다 (chunk 64 KiB, 파일 설정 한도, 10000개, 합계 256 MiB)")]
     Limit,
     #[error("파일 작업에 실패했습니다")]
     Io(#[from] io::Error),
@@ -33,8 +33,12 @@ pub enum SyncError {
     Offline,
     #[error("peer가 파일 요청을 거부했거나 응답 형식이 올바르지 않습니다")]
     Peer,
+    #[error("peer project 설정을 확인하세요: {0}")]
+    PeerConfig(&'static str),
     #[error("sync metadata가 손상되었거나 다른 pairing에 속합니다")]
     State,
+    #[error("Git handoff를 완료할 수 없습니다: {0}")]
+    Git(String),
     #[error("sync metadata를 직렬화할 수 없습니다")]
     Json(#[from] serde_json::Error),
 

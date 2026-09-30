@@ -1,5 +1,9 @@
 # w7bridge 기능 계획과 context 인계
 
+## 현재 작업 — device/project workflow
+
+`codex/sync-safety-e2e`의 변경과 기능별 evidence는 [기능 수용 기준](docs/feature_acceptance.md), owner 설정과 API 수명 계약은 [작업 흐름](docs/bridge_workflow.md)에 기록한다. 아래 날짜별 기록은 이전 source의 검증이며 이번 변경의 통과 근거로 재사용하지 않는다. 이번 작업은 tests와 Cargo.lock의 ignore를 제거하여 검증 입력을 보존한다.
+
 ## 현재 상태
 
 `list_projects`, `run_command`와 SSH 기반 `connect`가 구현되어 있다. 2026-09-30에 Mac에서 Windows `DESKTOP-8UEAOEB`로 MCP 초기화, 도구 발견과 프로젝트 조회를 확인했고, 등록된 `hostname` 명령도 Job Object를 통해 exit code 0으로 끝났다. 당시 Codex CLI 등록은 별도 설정에서 검증하고 테스트용 설치를 제거했다. 이후 `C:\w7bridge` 영구 설치와 기본 Codex 설정의 `w7bridge` 등록을 완료했다. 아래 영구 설치 검증 기록을 참고한다.

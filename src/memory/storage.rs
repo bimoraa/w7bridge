@@ -19,6 +19,11 @@ pub(super) fn read( store: &FileStore, path: &str, ) -> Result<ContextDocument, 
 
 pub(super) fn update( store: &FileStore, path: &str, content: &str, expected: Option<&str>, ) -> Result<MemoryState, FileError> {
 
+    if content.len() > 1024 * 1024 {
+
+        return Err(FileError::Limit);
+
+    }
     let sha256 = store.write(path, Some(content.as_bytes()), expected)?;
     Ok(MemoryState { exists: true, sha256, bytes: content.len() })
 

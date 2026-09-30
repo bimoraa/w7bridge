@@ -17,6 +17,7 @@ pub(crate) fn definitions() -> Vec<Tool> {
     ["list_files", "read_file", "write_file"].into_iter().map(|name| {
 
         let mut properties = json!({ "project_id": { "type": "string" } });
+        if name == "list_files" { properties["protocol_version"] = json!({"type":"integer","enum":[1,2]}); }
         let mut required = vec!["project_id"];
         if name != "list_files" {
 
@@ -49,11 +50,18 @@ pub(crate) async fn call(
 ) -> Result<CallToolResult, ErrorData> {
 
     let invalid = || ErrorData::invalid_params("파일 도구의 필수 인자와 형식을 확인하세요", None);
+    let mut version = 1;
     let (project, path, data, expected) = match name {
 
         "list_files" => {
 
             let args: ListArgs = serde_json::from_value(Value::Object(arguments)).map_err(|_| invalid())?;
+            version = args.protocol_version.unwrap_or(1);
+            if !matches!(version, 1 | 2) {
+
+                return Err(invalid());
+
+            }
             (args.project_id, None, None, None)
 
         }
@@ -106,7 +114,7 @@ pub(crate) async fn call(
         }
         match operation.as_str() {
 
-            "list_files" => search::execute(&store),
+            "list_files" => search::execute(&store, version),
             "read_file" => read::execute(&store, path.as_deref().ok_or(FileError::Data)?),
             _ => write::execute(&store, path.as_deref().ok_or(FileError::Data)?, data.as_deref(), expected.as_deref()),
 
@@ -143,6 +151,8 @@ pub(crate) fn failure(error: FileError) -> CallToolResult {
 
 }
 
+pub(crate) mod chunks;
+pub(crate) mod history;
 mod read;
 mod search;
 mod write;

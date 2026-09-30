@@ -42,6 +42,7 @@ struct Log {
 pub(crate) struct Live {
 
     log: Arc<Mutex<Log>>,
+    changed: Arc<Notify>,
 
 }
 
@@ -74,9 +75,10 @@ impl Live {
             }
 
         }
+        self.changed.notify_waiters();
 
     }
-    fn finish(&self, result: Result<Output, super::ExecutionError>) {
+    fn finish( &self, result: Result<Output, super::ExecutionError>, revision: Option<&str>, final_revision: Option<&str>, ) {
 
         if let Ok(mut log) = self.log.lock() {
 
@@ -90,8 +92,17 @@ impl Live {
                 Err(error) => json!({ "error": error.to_string() }),
 
             });
+            if let Some(result) = log.result.as_mut() {
+
+                result["revision_at_start"] = json!(revision);
+                result["revision_at_completion"] = json!(final_revision);
+                result["revision_matches_at_completion"] =
+                    json!(revision.zip(final_revision).map(|(start, end)| start == end));
+
+            }
 
         }
+        self.changed.notify_waiters();
 
     }
     fn completed(&self) -> bool {
@@ -106,9 +117,11 @@ struct Process {
 
     project: String,
     command: String,
+    revision: Option<String>,
     cancellation: CancellationToken,
     done: Arc<Notify>,
     live: Live,
+    snapshot: Option<tempfile::TempDir>,
 
 }
 
@@ -117,22 +130,73 @@ pub(crate) struct Processes {
     entries: Mutex<BTreeMap<String, Arc<Process>>>,
     executor: Arc<Executor>,
     next_id: AtomicU64,
+    events: Arc<crate::protocol::message::Events>,
 
 }
 
 impl Processes {
 
-    pub fn new(executor: Arc<Executor>) -> Self {
+    pub fn new( executor: Arc<Executor>, events: Arc<crate::protocol::message::Events>, ) -> Self {
 
-        Self { entries: Mutex::new(BTreeMap::new()), executor, next_id: AtomicU64::new(1) }
+        Self { entries: Mutex::new(BTreeMap::new()), executor, next_id: AtomicU64::new(1), events }
 
     }
 
-    pub async fn start(&self, policy: &Policy, project: &str, command: &str) -> Result<Value, String> {
+    pub async fn start(
+        &self,
+        policy: &Policy,
+        project: &str,
+        command: &str,
+        expected_revision: Option<&str>,
+    ) -> Result<Value, String> {
+
+        self.spawn(policy, project, command, true, CancellationToken::new(), expected_revision).await
+
+    }
+
+    async fn spawn( &self, policy: &Policy, project: &str, command: &str, detached: bool, cancellation: CancellationToken, expected_revision: Option<&str>, ) -> Result<Value, String> {
 
         let (root, definition) = policy.resolve(project, command).map_err(|error| error.to_string())?;
-        let root = root.to_owned();
-        let definition: CommandDefinition = definition.clone();
+        let mut root = root.to_owned();
+        let mut definition: CommandDefinition = definition.clone();
+        if !detached {
+
+            definition.background = false;
+
+        }
+        let mut files = match policy.files(project) {
+
+            Ok(files) => Some(files),
+            Err(crate::FileError::Disabled) => None,
+            Err(error) => return Err(error.to_string()),
+
+        };
+        let snapshot = if definition.source_snapshot {
+
+            let source = files.clone().ok_or("source snapshot에는 파일 권한이 필요합니다")?;
+            let (directory, copied, _) = tokio::task::spawn_blocking(move || source.snapshot())
+                .await
+                .map_err(|_| "source snapshot 작업을 완료할 수 없습니다")?
+                .map_err(|error| error.to_string())?;
+            root = directory.path().to_owned();
+            files = Some(copied);
+            Some(directory)
+
+        } else {
+
+            None
+
+        };
+        let revision = files
+            .as_ref()
+            .map(crate::sync::state::coordination::manifest)
+            .transpose()
+            .map_err(|error| error.to_string())?;
+        if expected_revision.is_some_and(|expected| revision.as_deref() != Some(expected)) {
+
+            return Err("sync 확인 뒤 source revision이 변경되었습니다. 다시 sync한 뒤 명령을 실행하세요".into());
+
+        }
         let id =
             SystemTime::now().duration_since(UNIX_EPOCH).map_err(|_| "시계를 읽을 수 없습니다")?.as_nanos().to_string()
                 + "-"
@@ -141,11 +205,14 @@ impl Processes {
 
             project: project.into(),
             command: command.into(),
-            cancellation: CancellationToken::new(),
+            revision: revision.clone(),
+            snapshot,
+            cancellation,
             done: Arc::new(Notify::new()),
             live: Live {
 
                 log: Arc::new(Mutex::new(Log { events: VecDeque::new(), bytes: 0, cursor: 0, result: None })),
+                changed: Arc::new(Notify::new()),
 
             },
 
@@ -180,7 +247,10 @@ impl Processes {
         }
         let executor = self.executor.clone();
         let task_process = process.clone();
+        let events = self.events.clone();
+        let task_id = id.clone();
         let (started, ready) = oneshot::channel();
+        let (announced, announcement) = oneshot::channel();
         tokio::spawn(async move {
 
             let result = executor
@@ -192,16 +262,75 @@ impl Processes {
                     Some(started),
                 )
                 .await;
-            task_process.live.finish(result);
+            let mut kind = match &result {
+
+                Ok(output) if output.success => "command_completed",
+                Ok(output) if matches!(output.status, crate::protocol::response::Status::Cancelled) => {
+
+                    "command_cancelled"
+
+                }
+                Ok(output) if matches!(output.status, crate::protocol::response::Status::TimedOut) => {
+
+                    "command_timed_out"
+
+                }
+                _ => "process_crashed",
+
+            };
+            let exit_code = result.as_ref().ok().and_then(|output| output.exit_code);
+            let error = result.as_ref().err().map(ToString::to_string);
+            let final_revision =
+                files.as_ref().and_then(|files| crate::sync::state::coordination::manifest(files).ok());
+            if task_process.revision.is_some() && task_process.revision != final_revision {
+
+                kind = "verification_failed";
+
+            }
+            task_process.live.finish(result, task_process.revision.as_deref(), final_revision.as_deref());
+            if let Ok(mut log) = task_process.live.log.lock()
+                && let Some(result) = log.result.as_mut()
+            {
+
+                result["source_snapshot"] = json!(task_process.snapshot.is_some());
+                result["artifact_root"] = json!(task_process.snapshot.as_ref().map(|snapshot| snapshot.path()));
+                result["revision_verified"] =
+                    json!(task_process.snapshot.is_some() && task_process.revision == final_revision);
+                if task_process.revision.is_some() && task_process.revision != final_revision {
+
+                    result["success"] = json!(false);
+                    result["verification_error"] = json!("명령 실행 중 source revision이 변경되었습니다");
+
+                }
+
+            }
             task_process.done.notify_waiters();
+            let _ = announcement.await;
+            events.publish(
+                &task_process.project,
+                kind,
+                json!({"process_id":task_id,"command":task_process.command,
+                "revision_at_start":task_process.revision,"revision_at_completion":final_revision,"revision_verified":task_process.snapshot.is_some() && task_process.revision==final_revision,"exit_code":exit_code,"error":error}),
+            );
 
         });
         let done = process.done.notified();
         tokio::pin!(done);
         done.as_mut().enable();
-        match ready.await {
+        let ready = ready.await;
+        if matches!(ready, Ok(Ok(()))) {
 
-            Ok(Ok(())) => Ok(json!({ "process_id": id, "status": "running" })),
+            self.events.publish(
+                project,
+                "process_started",
+                json!({"process_id":id,"command":command,"revision_at_start":revision}),
+            );
+
+        }
+        let _ = announced.send(());
+        match ready {
+
+            Ok(Ok(())) => Ok(json!({ "process_id": id, "status": "running", "revision_at_start":revision })),
             _ => {
 
                 if !process.live.completed() {
@@ -222,7 +351,7 @@ impl Processes {
 
         let entries = self.entries.lock().map_err(|_| "process 상태를 읽을 수 없습니다")?;
         Ok(json!({"processes": entries.iter().filter(|(_, process)| process.project == project).map(|(id, process)|
-            json!({"process_id": id, "command": process.command, "status": if process.live.completed() { "stopped" } else { "running" }})).collect::<Vec<_>>()}))
+            json!({"process_id": id, "command": process.command, "revision_at_start":process.revision, "source_snapshot":process.snapshot.is_some(), "artifact_root":process.snapshot.as_ref().map(|snapshot|snapshot.path()), "status": if process.live.completed() { "stopped" } else { "running" }})).collect::<Vec<_>>()}))
 
     }
 
@@ -249,10 +378,48 @@ impl Processes {
         }
         let first = log.events.front().map_or(log.cursor + 1, |event| event.cursor);
         Ok(
-            json!({ "process_id": id, "command": process.command, "status": if log.result.is_some() { "stopped" } else { "running" },
+            json!({ "process_id": id, "command": process.command, "revision_at_start":process.revision, "status": if log.result.is_some() { "stopped" } else { "running" },
             "next_cursor": log.cursor, "truncated": cursor + 1 < first,
             "events": log.events.iter().filter(|event| event.cursor > cursor).collect::<Vec<_>>(), "result": log.result }),
         )
+
+    }
+
+    /** 새 출력이나 종료까지 기다린다. timeout은 빈 event 응답이며 취소는 오류다. */
+    pub async fn read_wait( &self, project: &str, id: &str, cursor: u64, seconds: u64, cancellation: CancellationToken, ) -> Result<Value, String> {
+
+        if seconds > 30 {
+
+            return Err("출력 대기 한도는 0..=30초입니다".into());
+
+        }
+        let process = self.get(project, id)?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
+        loop {
+
+            // 확인 전에 waiter를 등록해서 출력 도착과 대기 사이의 event를 잃지 않아.
+            let changed = process.live.changed.notified();
+            tokio::pin!(changed);
+            changed.as_mut().enable();
+            if cancellation.is_cancelled() {
+
+                return Err("출력 대기가 취소되었습니다".into());
+
+            }
+            let output = self.read(project, id, cursor)?;
+            if seconds == 0 || output["next_cursor"].as_u64() != Some(cursor) || output["status"] == "stopped" {
+
+                return Ok(output);
+
+            }
+            tokio::select! {
+                biased;
+                _ = cancellation.cancelled() => return Err("출력 대기가 취소되었습니다".into()),
+                _ = tokio::time::sleep_until(deadline) => return self.read(project, id, cursor),
+                _ = changed => {},
+            }
+
+        }
 
     }
 
@@ -274,11 +441,90 @@ impl Processes {
 
     }
 
-    pub async fn restart(&self, policy: &Policy, project: &str, id: &str) -> Result<Value, String> {
+    pub async fn restart(
+        &self,
+        policy: &Policy,
+        project: &str,
+        id: &str,
+        expected_revision: Option<&str>,
+    ) -> Result<Value, String> {
 
         let process = self.get(project, id)?;
         self.stop(project, id).await?;
-        self.start(policy, project, &process.command).await
+        self.start(policy, project, &process.command, expected_revision).await
+
+    }
+
+    pub async fn run( &self, policy: &Policy, project: &str, command: &str, cancellation: CancellationToken, expected_revision: Option<&str>, ) -> Result<Value, String> {
+
+        let token = cancellation.child_token();
+        let _cancel_on_drop = token.clone().drop_guard();
+        let started = self.spawn(policy, project, command, false, token.clone(), expected_revision).await?;
+        let id = started["process_id"].as_str().ok_or("process handle을 읽을 수 없습니다")?;
+        loop {
+
+            let output = self.read(project, id, 0)?;
+            if output["status"] == "stopped" {
+
+                let mut result = output["result"].clone();
+                result["process_id"] = json!(id);
+                return Ok(result);
+
+            }
+            let process = self.get(project, id)?;
+            let done = process.done.notified();
+            tokio::pin!(done);
+            done.as_mut().enable();
+            if process.live.completed() {
+
+                continue;
+
+            }
+            tokio::select! {
+                _ = cancellation.cancelled() => { self.stop(project, id).await?; },
+                _ = done => {},
+            }
+
+        }
+
+    }
+
+    pub async fn sync_restart( &self, policy: &Policy, project: &str, ) -> Vec<String> {
+
+        let files = match policy.files(project) {
+
+            Ok(files) => files,
+            Err(error) => return vec![error.to_string()],
+
+        };
+        let revision = match crate::sync::state::coordination::manifest(&files) {
+
+            Ok(hash) => hash,
+            Err(error) => return vec![error.to_string()],
+
+        };
+        let entries = self
+            .entries
+            .lock()
+            .map(|entries| entries.iter().map(|(id, process)| (id.clone(), process.clone())).collect::<Vec<_>>())
+            .unwrap_or_default();
+        let mut errors = Vec::new();
+        for (id, process) in entries {
+
+            if process.project == project
+                && !process.live.completed()
+                && process.revision.as_deref() != Some(&revision)
+                && policy.resolve(project, &process.command).is_ok_and(|(_, command)| command.restart_on_sync)
+                && let Err(error) = self.restart(policy, project, &id, Some(&revision)).await
+            {
+
+                self.events.publish(project, "restart_failed", json!({"process_id":id,"error":error}));
+                errors.push(error);
+
+            }
+
+        }
+        errors
 
     }
 
@@ -308,7 +554,7 @@ impl Processes {
 
 }
 
-pub(super) struct ChildGuard {
+pub(crate) struct ChildGuard {
 
     pub child: Box<dyn ChildWrapper>,
     pub active: bool,
@@ -330,7 +576,7 @@ impl Drop for ChildGuard {
 
 }
 
-pub(super) async fn stop(child: &mut dyn ChildWrapper) -> Result<(), ExecutionError> {
+pub(crate) async fn stop(child: &mut dyn ChildWrapper) -> Result<(), ExecutionError> {
 
     child.start_kill().map_err(|source| failure("트리 종료", source))?;
     timeout(Duration::from_secs(5), child.wait())
@@ -340,3 +586,7 @@ pub(super) async fn stop(child: &mut dyn ChildWrapper) -> Result<(), ExecutionEr
     Ok(())
 
 }
+
+#[cfg(test)]
+#[path = "../../tests/unit/process_revision.rs"]
+mod revision_tests;

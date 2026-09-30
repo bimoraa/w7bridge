@@ -25,6 +25,7 @@ pub(crate) fn definitions() -> Vec<Tool> {
             properties["manifest_hash"] = json!({"type": "string"});
             properties["conflicts"] = json!({"type": "array", "items": {"type": "string"}, "maxItems": 10000});
             properties["lease_seconds"] = json!({"type": "integer", "minimum": 3, "maximum": 180});
+            properties["latency_ms"] = json!({"type": "integer", "minimum": 0, "maximum": 60000});
             required.extend(["generation", "status", "manifest_hash", "conflicts", "lease_seconds"]);
 
         }
@@ -47,13 +48,14 @@ pub(crate) async fn call(
     name: &str,
     args: Map<String, Value>,
     cancellation: CancellationToken,
+    peer: Option<&str>,
 ) -> Result<CallToolResult, ErrorData> {
 
     let result = match name {
 
-        "sync_status" => status::read(policy, coordinator, args)?,
-        "wait_for_sync" => pull::wait(policy, coordinator, args, cancellation).await?,
-        _ => push::checkpoint(policy, coordinator, args)?,
+        "sync_status" => status::read(policy, coordinator, args, peer)?,
+        "wait_for_sync" => pull::wait(policy, coordinator, args, cancellation, peer).await?,
+        _ => push::checkpoint(policy, coordinator, args, peer)?,
 
     };
     Ok(match result {
