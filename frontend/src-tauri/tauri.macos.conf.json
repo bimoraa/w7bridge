@@ -1,0 +1,38 @@
+{
+    "$schema": "https://schema.tauri.app/config/2",
+    "app": {
+        "macOSPrivateApi": true,
+        "windows": [
+            {
+                "label": "main",
+                "title": "w7bridge",
+                "width": 1100,
+                "height": 760,
+                "minWidth": 720,
+                "minHeight": 480,
+                "theme": "Dark",
+                "decorations": true,
+                "titleBarStyle": "Overlay",
+                "hiddenTitle": true,
+                "trafficLightPosition": { "x": 20, "y": 20 },
+                "transparent": true,
+                "backgroundColor": "#00000000",
+                "windowEffects": {
+                    "effects": ["sidebar"],
+                    "state": "followsWindowActiveState"
+                }
+            }
+        ],
+        "security": {
+            "capabilities": [
+                {
+                    "identifier": "macos-window-frame",
+                    "description": "메인 창의 topbar로 native 창을 이동할 수 있어.",
+                    "windows": ["main"],
+                    "platforms": ["macOS"],
+                    "permissions": ["core:window:allow-start-dragging"]
+                }
+            ]
+        }
+    }
+}

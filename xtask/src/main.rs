@@ -8,9 +8,10 @@ use std::{
     process::{Command, ExitCode, Stdio},
 };
 
-use proc_macro2::extra::DelimSpan;
+use proc_macro2::{LineColumn, Span, extra::DelimSpan};
 use syn::{
-    Block, ExprMatch, ExprStruct, FieldsNamed, ItemEnum, ItemImpl, ItemMod, ItemTrait,
+    Block, ExprMatch, ExprStruct, FieldsNamed, ItemEnum, ItemImpl, ItemMod, ItemTrait, Signature,
+    spanned::Spanned,
     visit::{self, Visit},
 };
 
@@ -191,6 +192,75 @@ fn rustfmt(source: &str, root: &Path) -> Result<String, String> {
 
 }
 
+#[derive(Default)]
+struct Signatures {
+
+    spans: Vec<(Span, DelimSpan)>,
+
+}
+
+impl<'ast> Visit<'ast> for Signatures {
+
+    fn visit_signature( &mut self, node: &'ast Signature, ) {
+
+        self.spans.push((node.span(), node.paren_token.span));
+        visit::visit_signature(self, node);
+
+    }
+
+}
+
+fn source_offset( source: &str, position: LineColumn, ) -> usize {
+
+    let mut lines = source.split_inclusive('\n');
+    let start = lines.by_ref().take(position.line - 1).map(str::len).sum::<usize>();
+    let line = lines.next().unwrap_or_default();
+
+    // span의 문자 열을 UTF-8 byte 위치로 바꿔서 한글 identifier도 보존해.
+    start + line.char_indices().nth(position.column).map_or(line.len(), |(index, _)| index)
+
+}
+
+fn horizontal_signatures( original: &str, formatted: &str, ) -> Result<String, syn::Error> {
+
+    let mut before = Signatures::default();
+    let mut after = Signatures::default();
+    before.visit_file(&syn::parse_file(original)?);
+    after.visit_file(&syn::parse_file(formatted)?);
+    let mut result = formatted.to_owned();
+
+    // 명시적으로 가로로 쓴 signature만 복원해. body와 나머지 구문은 rustfmt가 맡아.
+    for ((old, params), (new, _)) in before.spans.iter().zip(&after.spans).rev() {
+
+        if old.start().line != old.end().line {
+
+            continue;
+
+        }
+
+        let old_start = source_offset(original, old.start());
+        let old_end = source_offset(original, old.end());
+        let signature = &original[old_start..old_end];
+        let params_start = source_offset(original, params.open().end());
+        let params_end = source_offset(original, params.close().start());
+        let parameters = &original[params_start..params_end];
+
+        if !parameters.starts_with(' ') || !parameters.ends_with(' ') {
+
+            continue;
+
+        }
+
+        let new_start = source_offset(formatted, new.start());
+        let new_end = source_offset(formatted, new.end());
+        result.replace_range(new_start..new_end, signature);
+
+    }
+
+    Ok(result)
+
+}
+
 fn files(directory: &Path, paths: &mut Vec<PathBuf>) -> std::io::Result<()> {
 
     for entry in fs::read_dir(directory)? {
@@ -234,13 +304,30 @@ fn run() -> Result<bool, String> {
 
     }
 
+    let desktop_source = root.join("frontend/src-tauri/src");
+
+    if desktop_source.is_dir() {
+
+        files(&desktop_source, &mut paths).map_err(|_| "desktop Rust 파일 목록을 읽을 수 없습니다")?;
+
+    }
+
+    let desktop_build = root.join("frontend/src-tauri/build.rs");
+
+    if desktop_build.is_file() {
+
+        paths.push(desktop_build);
+
+    }
+
     paths.sort();
     let mut changed = false;
 
     for path in paths {
 
         let original = fs::read_to_string(&path).map_err(|_| "Rust 파일을 읽을 수 없습니다")?;
-        let formatted = padding(&rustfmt(&original, root)?)
+        let formatted = horizontal_signatures(&original, &rustfmt(&original, root)?)
+            .and_then(|source| padding(&source))
             .map_err(|_| format!("Rust AST를 해석할 수 없습니다: {}", path.display()))?;
 
         if original != formatted {

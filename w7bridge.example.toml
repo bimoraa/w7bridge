@@ -7,6 +7,10 @@ timeout_seconds = 60
 output_bytes = 65536
 concurrency = 1
 
+# 화면 캡처는 로컬 소유자가 명시적으로 켤 때만 MCP 도구에 등록해.
+[screenshots]
+enabled = false
+
 # 등록하려면 위의 projects = []를 지우고 실제 절대 경로를 넣어.
 # [[projects]]
 # id = "sample"
