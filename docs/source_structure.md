@@ -23,7 +23,7 @@
 
 `w7bridge::files`는 기존 library consumer가 쓰는 이름이라 `filesystem`의 re-export로 유지한다. 다음 public API breaking release에서 consumer를 `filesystem`으로 옮긴 뒤 alias를 제거한다. root `SyncError`와 `sync::SyncError`는 authoritative library의 같은 타입을 공개한다. consumer가 없는 one-shot error와 transport helper는 담당 채팅의 동의를 받아 제거했다.
 
-`memory/`와 `tools/memory/`는 공유 프로젝트 파일의 context 인계 경계다. vector database, embeddings, semantic memory, 별도 AI memory engine과 채팅 추출 작업은 구현하지 않는다. `tools/sync/`는 sync_status, wait_for_sync, sync_checkpoint를 등록한다. daemon round와 CLI lifecycle은 각각 sync/와 app·filesystem owner에 유지한다.
+`memory/`는 등록된 context 경로, UTF-8 문서와 SHA-256 revision을 소유한다. `storage`는 기존 `FileStore`의 lock·한도·조건부 쓰기를 재사용한다. `tools/memory/`는 `read_memory`, `update_memory`를 등록하고 file 도구와 동시 작업 한도를 공유한다. vector database, embeddings, semantic memory, 별도 AI memory engine과 채팅 추출 작업은 구현하지 않는다. `tools/sync/`는 sync_status, wait_for_sync, sync_checkpoint를 등록한다. daemon round와 CLI lifecycle은 각각 sync/와 app·filesystem owner에 유지한다.
 
 이동 중 두 기능 채팅은 mutation·formatter·build를 멈춘다. source와 tests backup은 repository 밖에 보관하고, 이동 후에는 새 경로와 검증 결과를 두 채팅에 전달한다. Windows 설치 binary는 이 source 이동만으로 갱신하지 않는다.
 
@@ -38,4 +38,4 @@
 
 이동 checkpoint 후 Windows SCM host/relay는 server/runtime, Mac LaunchAgent는 platform/macos/process, 공유 sync generation/lease는 sync/state, MCP 상태·대기·checkpoint는 tools/sync에 구현했다. process의 live output과 handle은 기존 execution/process를 확장했다. native lifecycle과 실제 SSH 검증은 [최신 결과](sync_validation.md)에 기록했다.
 
-별도로 승인된 명시적 screenshot 기능에는 capture.rs, error/capture.rs, tools/capture.rs를 추가했다. 예약 filesystem/platform 모듈을 OS helper에 사용한다. 이 확장은 이동 checkpoint의 77개 inventory와 구분한다. memory와 project switch의 예약 모듈은 계속 도구를 등록하지 않는다.
+별도로 승인된 명시적 screenshot 기능에는 capture.rs, error/capture.rs, tools/capture.rs를 추가했다. 예약 filesystem/platform 모듈을 OS helper에 사용한다. 이 확장은 이동 checkpoint의 77개 inventory와 구분한다. 이후 승인된 memory 기능은 기존 예약 모듈에 구현했으며 추가 저장소는 없다. project switch는 계속 도구를 등록하지 않는다.

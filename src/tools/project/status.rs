@@ -17,14 +17,16 @@ pub(crate) fn definition() -> Tool {
         ("additionalProperties".into(), json!(false)),
     ]);
 
-    Tool::new("list_projects", "Codex 로컬 프로젝트와 등록된 명령을 조회합니다. 자동 발견은 실행·파일 권한을 추가하지 않습니다", schema)
-        .with_annotations(ToolAnnotations::new().read_only(true).idempotent(true).open_world(false))
+    Tool::new(
+        "list_projects",
+        "Codex 로컬 프로젝트와 등록된 명령을 조회합니다. 자동 발견은 실행·파일 권한을 추가하지 않습니다",
+        schema,
+    )
+    .with_annotations(ToolAnnotations::new().read_only(true).idempotent(true).open_world(false))
 
 }
 
-pub(crate) async fn list_projects(
-    policy: &Policy, discovery: Arc<Discovery>, arguments: Map<String, Value>,
-) -> Result<CallToolResult, ErrorData> {
+pub(crate) async fn list_projects( policy: &Policy, discovery: Arc<Discovery>, arguments: Map<String, Value>, ) -> Result<CallToolResult, ErrorData> {
 
     if !arguments.is_empty() {
 
@@ -32,7 +34,8 @@ pub(crate) async fn list_projects(
 
     }
 
-    let snapshot = tokio::task::spawn_blocking(move || discovery.read()).await
+    let snapshot = tokio::task::spawn_blocking(move || discovery.read())
+        .await
         .map_err(|_| ErrorData::internal_error("Codex project 조회 작업을 완료할 수 없습니다", None))?;
     let mut projects = policy.list().into_iter().map(|project| json!(project)).collect::<Vec<_>>();
     for project in &snapshot.projects {

@@ -5,7 +5,7 @@
 - 프로젝트가 작성하는 문서, 주석, CLI/help, 오류·메시지는 한국어다. 일반 코드 주석은 자연스러운 반말로, 공개 API 계약은 block rustdoc으로 쓴다. identifier, API, protocol, 외부 process 출력과 generated 파일의 기술 표기는 유지한다.
 - 사용자가 지정한 구조를 따른다. 루트 package가 서버를 소유하고 `xtask`는 개발 도구만 소유한다. workspace 기본 build 대상은 서버다.
 - `config`는 설정, `error`는 typed error, `security`는 프로젝트 registry와 정책, `execution`은 프로세스 수명과 출력, `tools`는 MCP 도구, `platform`은 OS 차이, `server`는 MCP 연결과 router, `app`은 CLI와 종료 신호를 소유한다. `main`은 binary 진입만 담당한다. 이동 계약은 [source 구조](docs/source_structure.md)를 읽는다.
-- 파일과 장기 실행 process 도구의 모듈 경계는 유지하되 아직 쓰지 않는 기능을 활성화하지 않는다. 현재 작업 tree에는 `list_projects`, `run_command`, 파일 목록·읽기·쓰기와 process 제어 도구가 있다. sync 상태·대기·checkpoint MCP와 Windows service/relay도 구현되어 있다. 미구현 memory·project switch 도구는 등록하지 않는다.
+- 파일과 장기 실행 process 도구의 모듈 경계는 유지하되 아직 쓰지 않는 기능을 활성화하지 않는다. 현재 작업 tree에는 `list_projects`, `run_command`, 파일 목록·읽기·쓰기와 process 제어 도구가 있다. sync 상태·대기·checkpoint MCP와 Windows service/relay도 구현되어 있다. `read_memory`, `update_memory`는 등록된 project의 context 파일과 기존 file policy를 사용한다. 미구현 project switch 도구는 등록하지 않는다.
 - client가 executable·args·cwd·env·registry를 수정하게 하지 않는다. stdio에는 MCP 메시지만 쓴다. Windows Job Object 실패를 우회하지 않는다. 경로 검증은 OS sandbox가 아니다.
 - 네 칸 공백과 120열을 사용한다. 비어 있지 않은 multiline 중괄호 body의 시작과 끝 안쪽에 빈 줄 하나를 둔다. import와 지원하지 않는 macro token에는 padding을 넣지 않는다.
 - 새 함수 signature는 parameter를 한 줄씩 늘어놓지 말고 `fn execute( store: &FileStore, path: &str, )`처럼 가로로 쓴다. 사용자 요청으로 명시적인 가로 signature는 120열을 넘더라도 괄호 안쪽 공백과 trailing comma를 유지한다. parameter의 line comment처럼 줄바꿈에 의미가 있는 구문은 보존한다.

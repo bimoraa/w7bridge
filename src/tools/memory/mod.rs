@@ -1,7 +1,10 @@
 /*! project context를 UTF-8 문서로 읽고 조건부 갱신하는 MCP 도구야. */
 
 use crate::{FileError, memory::ProjectMemory, security::Policy, tools::files::failure};
-use rmcp::{ErrorData, model::{CallToolResult, Tool, ToolAnnotations}};
+use rmcp::{
+    ErrorData,
+    model::{CallToolResult, Tool, ToolAnnotations},
+};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 use std::sync::Arc;
@@ -33,7 +36,11 @@ struct UpdateArguments {
 
 }
 
-fn default_path() -> String { "MEMORY.md".into() }
+fn default_path() -> String {
+
+    "MEMORY.md".into()
+
+}
 
 pub(crate) fn definitions() -> Vec<Tool> {
 
@@ -70,7 +77,11 @@ pub(crate) fn definitions() -> Vec<Tool> {
 }
 
 pub(crate) async fn call(
-    policy: &Policy, slots: Arc<Semaphore>, name: &str, arguments: Map<String, Value>, cancellation: CancellationToken,
+    policy: &Policy,
+    slots: Arc<Semaphore>,
+    name: &str,
+    arguments: Map<String, Value>,
+    cancellation: CancellationToken,
 ) -> Result<CallToolResult, ErrorData> {
 
     let invalid = || ErrorData::invalid_params("project_id, context 경로와 memory 인자를 확인하세요", None);
@@ -84,14 +95,26 @@ pub(crate) async fn call(
         }
         "update_memory" => {
 
-            if !arguments.contains_key("expected_hash") { return Err(invalid()); }
+            if !arguments.contains_key("expected_hash") {
+
+                return Err(invalid());
+
+            }
             let args: UpdateArguments = serde_json::from_value(Value::Object(arguments)).map_err(|_| invalid())?;
             if args.expected_hash.as_ref().is_some_and(|hash| {
 
                 hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 
-            }) { return Err(invalid()); }
-            if args.content.len() > 1_048_576 { return Ok(failure(FileError::Limit)); }
+            }) {
+
+                return Err(invalid());
+
+            }
+            if args.content.len() > 1_048_576 {
+
+                return Ok(failure(FileError::Limit));
+
+            }
             (args.project_id, args.path, Some((args.content, args.expected_hash)))
 
         }
@@ -113,7 +136,11 @@ pub(crate) async fn call(
     let result = tokio::task::spawn_blocking(move || {
 
         let _permit = permit;
-        if cancellation.is_cancelled() { return Err(FileError::Cancelled); }
+        if cancellation.is_cancelled() {
+
+            return Err(FileError::Cancelled);
+
+        }
         match update {
 
             Some((content, expected)) => update::execute(&memory, &path, &content, expected.as_deref()),
@@ -121,7 +148,9 @@ pub(crate) async fn call(
 
         }
 
-    }).await.map_err(|_| ErrorData::internal_error("memory 작업을 완료할 수 없습니다", None))?;
+    })
+    .await
+    .map_err(|_| ErrorData::internal_error("memory 작업을 완료할 수 없습니다", None))?;
     Ok(match result {
 
         Ok(value) => CallToolResult::structured(value),

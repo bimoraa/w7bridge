@@ -33,7 +33,7 @@ pub(crate) async fn call(
 
     match request.name.as_ref() {
 
-        "list_projects" => project::status::list_projects(&bridge.policy, arguments).await,
+        "list_projects" => project::status::list_projects(&bridge.policy, bridge.codex.clone(), arguments).await,
         "run_command" => {
 
             execution::run_command::run(&bridge.policy, &bridge.executor, &bridge.coordinator, arguments, cancellation)

@@ -16,13 +16,7 @@ impl MemoryState {
 
     pub(super) fn observed( content: Option<&[u8]>, ) -> Self {
 
-        Self {
-
-            exists: content.is_some(),
-            sha256: content.map(digest),
-            bytes: content.map_or(0, <[u8]>::len),
-
-        }
+        Self { exists: content.is_some(), sha256: content.map(digest), bytes: content.map_or(0, <[u8]>::len) }
 
     }
 

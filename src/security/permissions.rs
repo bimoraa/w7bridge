@@ -90,7 +90,7 @@ impl Policy {
 
     }
 
-    pub(crate) fn project_at(&self, root: &Path) -> Option<&str> {
+    pub(crate) fn project_at( &self, root: &Path, ) -> Option<&str> {
 
         let canonical = root.canonicalize().ok()?;
         self.projects.values().find(|project| project.root == canonical).map(|project| project.id.as_str())

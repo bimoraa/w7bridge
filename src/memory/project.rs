@@ -1,7 +1,11 @@
 /*! registry가 허용한 project와 context 경로만 memory 도구에 연결해. */
 
 use super::{context::ContextDocument, state::MemoryState, storage};
-use crate::{FileError, filesystem::{FileStore, validate_paths}, security::Policy};
+use crate::{
+    FileError,
+    filesystem::{FileStore, validate_paths},
+    security::Policy,
+};
 use serde::Serialize;
 
 pub(crate) struct ProjectMemory {
@@ -38,7 +42,10 @@ impl ProjectMemory {
 
         let store = policy.files(project_id)?;
         let mut context_files: Vec<String> = ["AGENTS.md", "MEMORY.md", "PLANS.md"]
-            .into_iter().map(String::from).chain(store.settings().context_files.iter().cloned()).collect();
+            .into_iter()
+            .map(String::from)
+            .chain(store.settings().context_files.iter().cloned())
+            .collect();
         context_files.sort();
         context_files.dedup();
         validate_paths(context_files.iter().map(String::as_str))?;

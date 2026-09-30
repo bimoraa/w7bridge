@@ -2,6 +2,12 @@
 version = 1
 projects = []
 
+# Codex의 로컬 project 목록은 자동으로 읽어. command·파일 권한은 별도로 등록해.
+[codex]
+enabled = true
+# service처럼 다른 계정에서 읽을 때만 실제 Codex home을 지정해.
+# home = 'C:\Users\User\.codex'
+
 [execution]
 timeout_seconds = 60
 output_bytes = 65536

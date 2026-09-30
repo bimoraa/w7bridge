@@ -76,14 +76,16 @@ struct LegacyProject {
 
 impl Discovery {
 
-    pub(crate) fn new(settings: CodexSettings) -> Self {
+    pub(crate) fn new( settings: CodexSettings, ) -> Self {
 
         let home = settings.home.or_else(|| {
 
             std::env::var_os("CODEX_HOME").filter(|value| !value.is_empty()).map(PathBuf::from).or_else(|| {
 
                 let variable = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
-                std::env::var_os(variable).filter(|value| !value.is_empty()).map(|home| PathBuf::from(home).join(".codex"))
+                std::env::var_os(variable)
+                    .filter(|value| !value.is_empty())
+                    .map(|home| PathBuf::from(home).join(".codex"))
 
             })
 
@@ -93,7 +95,7 @@ impl Discovery {
     }
 
     /** 매 호출에 최신 목록을 읽는다. 없으면 missing, 읽기 실패는 error이며 이전 목록을 재사용하지 않는다. */
-    pub(crate) fn read(&self) -> Snapshot {
+    pub(crate) fn read( &self, ) -> Snapshot {
 
         let mut snapshot = Snapshot { projects: Vec::new(), status: "missing", source: None, error: None };
         if !self.enabled {
@@ -125,7 +127,7 @@ impl Discovery {
 
     }
 
-    fn read_home(&self, home: &Path) -> Result<Option<(Vec<Project>, &'static str)>, DiscoveryError> {
+    fn read_home( &self, home: &Path, ) -> Result<Option<(Vec<Project>, &'static str)>, DiscoveryError> {
 
         let entries = match fs::read_dir(home) {
 
@@ -139,9 +141,16 @@ impl Discovery {
 
             let entry = entry?;
             let name = entry.file_name();
-            let Some(version) = name.to_str().and_then(|name| name.strip_prefix("state_"))
-                .and_then(|name| name.strip_suffix(".sqlite")).and_then(|version| version.parse::<u32>().ok())
-            else { continue };
+            let Some(version) = name
+                .to_str()
+                .and_then(|name| name.strip_prefix("state_"))
+                .and_then(|name| name.strip_suffix(".sqlite"))
+                .and_then(|version| version.parse::<u32>().ok())
+            else {
+
+                continue;
+
+            };
             if database.as_ref().is_none_or(|(current, _)| version > *current) {
 
                 database = Some((version, entry.path()));
@@ -151,10 +160,12 @@ impl Discovery {
         }
         if let Some((_, path)) = database {
 
-            let connection = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
+            let connection =
+                Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
             connection.busy_timeout(Duration::from_millis(250))?;
             let has_projects: bool = connection.query_row(
-                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'projects')", [],
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'projects')",
+                [],
                 |row| row.get(0),
             )?;
             if has_projects {
@@ -205,7 +216,7 @@ impl Discovery {
 
 }
 
-fn read_database(connection: &Connection) -> Result<Vec<Project>, DiscoveryError> {
+fn read_database( connection: &Connection, ) -> Result<Vec<Project>, DiscoveryError> {
 
     let mut statement = connection.prepare(
         "SELECT p.id, p.name, r.path FROM projects p JOIN project_roots r ON p.id = r.project_id
@@ -237,10 +248,15 @@ fn read_database(connection: &Connection) -> Result<Vec<Project>, DiscoveryError
 
 }
 
-fn project(id: String, name: String, roots: Vec<PathBuf>) -> Option<Project> {
+fn project( id: String, name: String, roots: Vec<PathBuf>, ) -> Option<Project> {
 
-    if id.is_empty() || id.len() > 64 || !id.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_-".contains(&byte))
-        || name.is_empty() || name.len() > 512 || name.chars().any(char::is_control) || roots.len() > 64
+    if id.is_empty()
+        || id.len() > 64
+        || !id.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_-".contains(&byte))
+        || name.is_empty()
+        || name.len() > 512
+        || name.chars().any(char::is_control)
+        || roots.len() > 64
     {
 
         return None;
@@ -250,7 +266,11 @@ fn project(id: String, name: String, roots: Vec<PathBuf>) -> Option<Project> {
     for root in roots {
 
         let Some(value) = root.to_str() else { continue };
-        if root.is_absolute() && value.len() <= 4096 && !value.chars().any(char::is_control) && !valid_roots.contains(&root) {
+        if root.is_absolute()
+            && value.len() <= 4096
+            && !value.chars().any(char::is_control)
+            && !valid_roots.contains(&root)
+        {
 
             valid_roots.push(root);
 

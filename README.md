@@ -11,7 +11,7 @@ Mac MCP 클라이언트 → SSH → Windows w7bridge
 
 ## 초기 범위와 구조
 
-서버 package에 library와 CLI를 두고, `xtask` package는 개발 도구만 담당한다. database, plugin system, scheduler는 현재 필요하지 않다.
+서버 package에 library와 CLI를 두고, `xtask` package는 개발 도구만 담당한다. 별도 database, plugin system, scheduler는 현재 필요하지 않다. Codex의 기존 database는 project metadata를 읽는 용도로만 사용한다.
 
 | 소유 모듈 | 책임 |
 | --- | --- |
@@ -28,17 +28,39 @@ Mac MCP 클라이언트 → SSH → Windows w7bridge
 | `connection` | Mac의 SSH 연결 검증, 지속 peer 연결과 Codex MCP 등록 |
 | `protocol` | 도구 입력과 실행 결과의 wire 타입 |
 | `sync` | baseline, journal, 충돌 보존과 전송 계획 |
-| `memory` | 공유 context 파일 경계 문서; 별도 저장소 없음 |
+| `memory` | context 문서 읽기·조건부 갱신과 파일 revision; 기존 FileStore 재사용 |
 
 사용자가 지정한 source tree와 이전 경로의 이동 계약은 [source 구조](docs/source_structure.md)에 있다. 미구현 모듈은 문서만 두고 도구를 등록하지 않는다.
 
-현재 source에는 파일 목록·읽기·쓰기, sync 상태·대기, process 제어와 Windows service가 구현되어 있다. `C:\w7bridge`에 이미 설치된 이전 binary에는 두 command 도구만 있으므로 새로운 기능을 사용하려면 검증한 새 binary와 설정을 배치해야 한다. client가 고르는 executable·args·cwd·env와 원격 registry 수정은 허용하지 않는다.
+현재 source에는 파일 목록·읽기·쓰기, context 읽기·갱신, sync 상태·대기, process 제어와 Windows service가 구현되어 있다. 2026-09-30에 `C:\w7bridge`의 영구 binary를 갱신하고 기존 config를 보존했다. 새 binary와 연결하려면 종료된 MCP transport를 재연결한다. 기능별 검증 범위는 [PLANS.md](PLANS.md)에 기록했다. client가 고르는 executable·args·cwd·env와 원격 registry 수정은 허용하지 않는다.
 
 ## 프로젝트 파일과 context 인계 계획
 
 Mac과 Windows 사이의 작업 context는 프로젝트와 함께 공유하는 `AGENTS.md`, `MEMORY.md`, `PLANS.md`와 다른 context 파일에 남긴다. Windows에서 파일을 수정하면 sync를 통해 Mac에도 전달하고, 이어서 작업하는 Codex가 같은 파일을 읽는다. 중요한 결정, 진행 상태와 다음 작업을 한 채팅에만 보관하지 않는다.
 
 파일 sharing과 양방향 sync daemon이 이 흐름을 수행한다. context 파일은 sync 대상에 포함하고 `.git`, `target`, `node_modules`, build artifact와 cache는 제외해야 한다. `.gitignore`와 sync 정책은 별도 계약이다. 파일 범위, 충돌 처리와 완료 기준은 [PLANS.md](PLANS.md)에 있다.
+
+## project memory MCP
+
+`read_memory`, `update_memory`는 project 안의 context 파일을 읽고 갱신한다. 기본 경로는 `MEMORY.md`이며 `AGENTS.md`, `PLANS.md`와 로컬 config의 `projects.files.context_files`에 등록한 경로도 허용한다. 해당 project는 registry에 명시적으로 등록하고 `projects.files.enabled = true`로 설정해야 한다. Codex 자동 발견만으로는 파일 권한을 주지 않는다.
+
+`read_memory` 인자 예시:
+
+```json
+{"project_id":"sample","path":"MEMORY.md"}
+```
+
+응답에는 `project_id`, `path`, 허용된 `context_files`, `exists`, UTF-8 `content`, 원본 byte의 `sha256`, `bytes`가 있다. 파일이 없으면 `exists=false`, `content=null`, `sha256=null`, `bytes=0`이며 읽기만으로 context 파일을 만들지 않는다. 매 요청에 실제 파일을 읽으므로 editor와 sync의 변경도 다음 읽기에 보인다. 문서 내용이나 줄바꿈을 자동 정규화하지 않는다.
+
+`update_memory`는 문서 전체와 필수 `expected_hash`를 받는다. 처음 생성할 때만 `null`을 사용한다:
+
+```json
+{"project_id":"sample","content":"이어갈 작업 context","expected_hash":null}
+```
+
+기존 파일은 `read_memory`에서 받은 64자리 소문자 SHA-256을 `expected_hash`에 넣는다. 읽은 뒤 editor나 sync가 수정하면 `conflict`로 실패하며 새 내용을 보존한다. 다시 읽고 검토한 뒤 갱신한다. 응답이 유실되어도 무조건 재시도하지 않는다. 빈 문자열은 빈 파일로 저장하며 삭제나 append 인자는 제공하지 않는다.
+
+파일 access와 동일한 lock, symlink·제외 경로 정책, 1 MiB 한도와 동시 작업 슬롯을 사용한다. UTF-8이 아닌 파일은 `data` 오류다. 저장 성공은 해당 project 파일에 반영됐다는 의미이며 다른 기기까지 sync됐다는 의미는 아니다. pairing daemon을 실행하고 `wait_for_sync`로 새 round 완료를 확인한 뒤 상대 기기에서 같은 파일을 읽는다. `.gitignore`와 관계없이 기존 context sync 대상이다. 채팅 자동 추출이나 별도 memory database는 없다.
 
 ## Windows에서 시작
 
@@ -52,7 +74,13 @@ Copy-Item w7bridge.example.toml w7bridge.toml
 .\target\release\w7bridge.exe --config .\w7bridge.toml
 ```
 
-예제는 `projects = []`로 시작한다. 등록된 프로젝트가 없으면 아무 명령도 실행할 수 없다. `w7bridge.toml`은 git에서 제외한다. 프로젝트를 등록하려면 `projects = []`를 지우고 다음처럼 실제 절대 경로를 넣는다.
+예제는 `projects = []`로 시작하지만 `list_projects`는 Codex에 있는 로컬 project 목록을 자동으로 보여준다. 이름, Codex ID, root 목록과 현재 디렉터리 존재 여부를 매 요청에 다시 읽는다. Codex에 project를 추가하거나 이름을 바꾸거나 삭제하면 다음 조회에 반영된다. 별도 registry 생성이나 Codex 설정 변경은 하지 않는다.
+
+현재 Codex의 `state_<version>.sqlite`에서 `projects`와 `project_roots`만 read-only로 조회한다. project table이 없는 구버전에서는 `.codex-global-state.json`의 `local-projects`만 읽는다. 현재 database가 비었으면 오래된 JSON 목록을 되살리지 않는다. remote project, 채팅, memory, 인증 정보는 반환하지 않는다. 내부 저장 형식이 바뀌거나 읽기 실패가 있으면 `codex.status = "error"`로 보고하며 명시적으로 등록한 명령 목록은 유지한다.
+
+Codex home은 `[codex].home`, `CODEX_HOME`, 현재 계정의 `.codex` 순서로 찾는다. 자동 조회는 기본 활성화이며 `[codex]`의 `enabled = false`로 끌 수 있다. Windows service에서 사용자 project를 조회하려면 실제 사용자 Codex home과 읽기 권한을 로컬 설정에서 지정한다. home은 절대 경로이며 client가 변경할 수 없다.
+
+자동으로 발견한 project는 목록만 제공한다. command 실행이나 file 공유 권한을 자동으로 추가하지 않는다. `w7bridge.toml`은 git에서 제외한다. 명령을 허용하려면 `projects = []`를 지우고 다음처럼 실제 절대 경로와 command를 넣는다.
 
 ```toml
 version = 1
@@ -280,10 +308,17 @@ Mac에서 `w7bridge connect --host codex-pc-lan --service`로 등록한다. SSH 
 
 ## 도구 계약과 한도
 
-`list_projects`는 인자를 받지 않으며 프로젝트 ID와 명령 이름만 반환한다. root, executable, args, env는 공개하지 않는다.
+`list_projects`는 인자를 받지 않는다. 기존 registry의 ID·명령 목록과 Codex 로컬 project metadata를 함께 반환한다. 같은 canonical root에 등록된 권한이 있으면 기존 ID와 명령을 유지하고 Codex metadata를 합친다. executable, args, env는 공개하지 않는다. 자동으로 발견한 project의 `commands`는 빈 목록이다. 다중 root는 `roots`로 반환하며 현재 존재하지 않는 root가 있으면 `available = false`다.
 
 ```json
-{ "projects": [{ "id": "sample", "commands": ["build", "test"] }] }
+{
+  "projects": [
+    { "id": "sample", "commands": ["build", "test"] },
+    { "id": "codex-project-id", "name": "fatomic", "roots": ["D:/Downloads/fatomic"],
+      "available": true, "commands": [], "source": "codex" }
+  ],
+  "codex": { "status": "ready", "source": "codex_database" }
+}
 ```
 
 `run_command`는 다음 두 문자열만 받는다. 추가 인자는 거부한다.
