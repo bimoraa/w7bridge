@@ -384,7 +384,14 @@ impl ServerHandler for Hub {
             }
 
         };
-        match remote.forward(&request.name, arguments, context.ct).await {
+        let cancellation = context.ct.clone();
+        match super::progress::respond(context, |output| {
+
+            remote.forward_with_output(&request.name, arguments, cancellation, output, Some(&id))
+
+        })
+        .await
+        {
 
             Ok(result) => Ok(result.into()),
             Err(error) => {

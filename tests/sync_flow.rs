@@ -120,7 +120,7 @@ async fn sync_then_fresh_wait_gates_build_test_run_and_reports_conflict_offline(
     // 이전 synced receipt가 있어도 build마다 새 round를 기다려.
     for command in ["build", "test", "run"] {
 
-        let execute = call(&commands, "run_command", json!({"project_id":"sample","command":command}));
+        let execute = call(&commands, "run_command", json!({"project_id":"sample","command":command,"wait":true}));
         let sync = async {
 
             let ticket = tokio::time::timeout(Duration::from_secs(5), async {

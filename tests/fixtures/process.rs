@@ -30,6 +30,21 @@ fn process() {
             eprintln!("오류 출력 확인");
 
         }
+        "stream" => {
+
+            io::stdout().write_all(b"OUT_1").unwrap();
+            io::stdout().flush().unwrap();
+            io::stderr().write_all(b"ERR_1").unwrap();
+            io::stderr().flush().unwrap();
+            thread::sleep(Duration::from_millis(1500));
+            io::stdout().write_all(b"OUT_2").unwrap();
+            io::stdout().flush().unwrap();
+            io::stderr().write_all(b"ERR_2").unwrap();
+            io::stderr().flush().unwrap();
+            thread::sleep(Duration::from_millis(500));
+            fs::write(root.join("stream_done"), "종료").unwrap();
+
+        }
         "failure" => std::process::exit(7),
         "flood" => {
 

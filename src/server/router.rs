@@ -31,6 +31,7 @@ pub(crate) async fn call(
     bridge: &Bridge,
     request: CallToolRequestParams,
     cancellation: CancellationToken,
+    output: Option<tokio::sync::mpsc::Sender<serde_json::Value>>,
 ) -> Result<CallToolResult, ErrorData> {
 
     let mut arguments = request.arguments.unwrap_or_default();
@@ -115,6 +116,7 @@ pub(crate) async fn call(
                 arguments,
                 cancellation,
                 sync_peer.as_deref(),
+                output,
             )
             .await
 

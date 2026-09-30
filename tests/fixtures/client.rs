@@ -95,9 +95,7 @@ impl Client {
 
             loop {
 
-                let mut line = String::new();
-                assert!(self.output.read_line(&mut line).await.unwrap() > 0, "MCP 연결이 닫혔어");
-                let value: Value = serde_json::from_str(&line).expect("stdout에 protocol 이외의 텍스트가 있어");
+                let value = self.message().await;
                 if value["id"] == id {
 
                     return value;
@@ -109,6 +107,14 @@ impl Client {
         })
         .await
         .expect("MCP 응답 시간이 초과됐어")
+
+    }
+
+    pub async fn message(&mut self) -> Value {
+
+        let mut line = String::new();
+        assert!(self.output.read_line(&mut line).await.unwrap() > 0, "MCP 연결이 닫혔어");
+        serde_json::from_str(&line).expect("stdout에 protocol 이외의 텍스트가 있어")
 
     }
 

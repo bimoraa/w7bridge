@@ -134,6 +134,14 @@ pub(crate) struct Processes {
 
 }
 
+/** 요청의 응답 대기 한도와 선택적인 출력 stream을 함께 소유한다. */
+pub(crate) struct RunOptions {
+
+    pub yield_time: Option<Duration>,
+    pub output: Option<tokio::sync::mpsc::Sender<Value>>,
+
+}
+
 impl Processes {
 
     pub fn new( executor: Arc<Executor>, events: Arc<crate::protocol::message::Events>, ) -> Self {
@@ -455,34 +463,87 @@ impl Processes {
 
     }
 
-    pub async fn run( &self, policy: &Policy, project: &str, command: &str, cancellation: CancellationToken, expected_revision: Option<&str>, ) -> Result<Value, String> {
+    /** 첫 출력에서 handle을 반환하거나 종료까지 기다리며 같은 ring/cursor를 stream에 전달한다. */
+    pub async fn run( &self, policy: &Policy, project: &str, command: &str, cancellation: CancellationToken, expected_revision: Option<&str>, options: RunOptions, ) -> Result<Value, String> {
 
-        let token = cancellation.child_token();
-        let _cancel_on_drop = token.clone().drop_guard();
-        let started = self.spawn(policy, project, command, false, token.clone(), expected_revision).await?;
+        let RunOptions { yield_time, output: mut output_channel } = options;
+        let token = CancellationToken::new();
+        let cancel_on_drop = token.clone().drop_guard();
+        let started = self.spawn(policy, project, command, yield_time.is_some(), token, expected_revision).await?;
         let id = started["process_id"].as_str().ok_or("process handle을 읽을 수 없습니다")?;
+        let deadline = yield_time.map(|duration| tokio::time::Instant::now() + duration);
+        let mut cursor = 0;
         loop {
 
-            let output = self.read(project, id, 0)?;
+            if cancellation.is_cancelled() {
+
+                self.stop(project, id).await?;
+                return Err("명령 요청이 취소되었습니다".into());
+
+            }
+            let mut output = self.read(project, id, cursor)?;
+            output["project_id"] = json!(project);
+            if let Some(sender) = &output_channel {
+
+                tokio::select! {
+                    biased;
+                    _ = cancellation.cancelled() => {
+                        self.stop(project, id).await?;
+                        return Err("명령 요청이 취소되었습니다".into());
+                    }
+                    result = sender.send(output.clone()) => if result.is_err() { output_channel = None; },
+                }
+
+            }
             if output["status"] == "stopped" {
 
                 let mut result = output["result"].clone();
                 result["process_id"] = json!(id);
+                result["next_cursor"] = output["next_cursor"].clone();
+                result["events"] = output["events"].clone();
+                result["truncated"] = output["truncated"].clone();
                 return Ok(result);
 
             }
-            let process = self.get(project, id)?;
-            let done = process.done.notified();
-            tokio::pin!(done);
-            done.as_mut().enable();
-            if process.live.completed() {
+            cursor = output["next_cursor"].as_u64().ok_or("출력 cursor를 읽을 수 없습니다")?;
+            if deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+                || (deadline.is_some() && cursor > 0)
+            {
 
-                continue;
+                output["stdout"] = json!(
+                    output["events"]
+                        .as_array()
+                        .map(|events| events
+                            .iter()
+                            .filter(|event| event["stream"] == "stdout")
+                            .filter_map(|event| event["text"].as_str())
+                            .collect::<String>())
+                        .unwrap_or_default()
+                );
+                output["stderr"] = json!(
+                    output["events"]
+                        .as_array()
+                        .map(|events| events
+                            .iter()
+                            .filter(|event| event["stream"] == "stderr")
+                            .filter_map(|event| event["text"].as_str())
+                            .collect::<String>())
+                        .unwrap_or_default()
+                );
+                let _ = cancel_on_drop.disarm();
+                return Ok(output);
 
             }
+            let waiting = self.read_wait(project, id, cursor, 30, cancellation.clone());
+            tokio::pin!(waiting);
             tokio::select! {
-                _ = cancellation.cancelled() => { self.stop(project, id).await?; },
-                _ = done => {},
+                result = &mut waiting => { result?; }
+                _ = async {
+                    match deadline {
+                        Some(deadline) => tokio::time::sleep_until(deadline).await,
+                        None => std::future::pending().await,
+                    }
+                } => {},
             }
 
         }

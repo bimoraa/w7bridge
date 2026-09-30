@@ -1,6 +1,6 @@
 /*! SSH child와 지속 MCP peer 연결의 종료를 소유해. */
 
-use super::{handshake::check_transport, transport::Options};
+use super::{handshake::check_transport, progress::ProgressClient, transport::Options};
 use crate::{
     ConnectError,
     config::Pair,
@@ -84,7 +84,8 @@ impl Pair {
 
 pub(crate) struct Remote {
 
-    client: RunningService<RoleClient, ()>,
+    client: RunningService<RoleClient, ProgressClient>,
+    notifications: tokio::sync::broadcast::Sender<rmcp::model::ProgressNotificationParam>,
     child: Child,
     project: String,
     root_key: Option<String>,
@@ -105,7 +106,13 @@ pub(crate) struct Remote {
 
 impl Remote {
 
-    pub(crate) async fn forward( &self, name: &str, mut arguments: serde_json::Map<String,Value>, cancellation: tokio_util::sync::CancellationToken, ) -> Result<rmcp::model::CallToolResult,SyncError> {
+    pub(crate) async fn forward( &self, name: &str, arguments: serde_json::Map<String,Value>, cancellation: tokio_util::sync::CancellationToken, ) -> Result<rmcp::model::CallToolResult,SyncError> {
+
+        self.forward_with_output(name, arguments, cancellation, None, None).await
+
+    }
+
+    pub(crate) async fn forward_with_output( &self, name: &str, mut arguments: serde_json::Map<String,Value>, cancellation: tokio_util::sync::CancellationToken, mut output: Option<tokio::sync::mpsc::Sender<Value>>, display_project: Option<&str>, ) -> Result<rmcp::model::CallToolResult,SyncError> {
 
         if name != "capture_screenshot" && name != "bridge_info" {
 
@@ -113,18 +120,53 @@ impl Remote {
 
         }
         self.select_peer(name, &mut arguments);
+        let mut notifications = self.notifications.subscribe();
+        let mut missed = 0;
+        let mut last_cursor = 0;
+        let params = CallToolRequestParams::new(name.to_owned()).with_arguments(arguments);
         let mut request = self
             .client
             .send_cancellable_request(
-                rmcp::model::ClientRequest::CallToolRequest(rmcp::model::CallToolRequest::new(
-                    CallToolRequestParams::new(name.to_owned()).with_arguments(arguments),
-                )),
+                rmcp::model::ClientRequest::CallToolRequest(rmcp::model::CallToolRequest::new(params)),
                 rmcp::service::PeerRequestOptions::no_options(),
             )
             .await
             .map_err(|_| SyncError::Offline)?;
-        let response = tokio::select! {
-            result = &mut request.rx => match result.map_err(|_| SyncError::Offline)? {
+        // SDK가 token을 생성하므로 실제 전송된 handle의 token으로 분리해.
+        let token = request.progress_token.clone();
+        let response = loop {
+
+            tokio::select! {
+            biased;
+            message = notifications.recv(), if output.is_some() => {
+                match message {
+                  Ok(message) => {
+                    if message.progress_token != token { continue; }
+                    let Some(mut data) = message.meta.as_ref().and_then(|meta|meta.get("io.w7bridge/output")).cloned() else { continue; };
+                    let Some(fields) = data.as_object_mut() else { continue; };
+                    if let Some(project) = display_project { fields.insert("project_id".into(),json!(project)); }
+                    if missed > 0 {
+                        fields.insert("truncated".into(),json!(true));
+                        fields.insert("missed_notifications".into(),json!(missed));
+                        fields.insert("resume_cursor".into(),json!(last_cursor));
+                        missed = 0;
+                    }
+                    last_cursor = fields.get("next_cursor").and_then(Value::as_u64).unwrap_or(last_cursor);
+                    if let Some(sender) = &output {
+                        tokio::select! {
+                            _ = cancellation.cancelled() => {
+                                let _ = timeout(Duration::from_secs(5),request.cancel(Some("hub 요청 취소".into()))).await;
+                                return Err(SyncError::Offline);
+                            }
+                            result = sender.send(data) => if result.is_err() { output = None; },
+                        }
+                    }
+                  }
+                  Err(tokio::sync::broadcast::error::RecvError::Lagged(count)) => { missed += count; }
+                  Err(tokio::sync::broadcast::error::RecvError::Closed) => output = None,
+                }
+            }
+            result = &mut request.rx => break match result.map_err(|_| SyncError::Offline)? {
                 Ok(response) => response,
                 Err(rmcp::service::ServiceError::McpError(error)) => return Ok(rmcp::model::CallToolResult::structured_error(
                     json!({"code":"remote_rpc_error","rpc_code":error.code,"message":error.message}),
@@ -135,6 +177,8 @@ impl Remote {
                 let _ = timeout(Duration::from_secs(5), request.cancel(Some("hub 요청 취소".into()))).await;
                 return Err(SyncError::Offline);
             },
+            }
+
         };
         match response {
 
@@ -156,8 +200,10 @@ impl Remote {
             .spawn()?;
         let input = child.stdout.take().ok_or(SyncError::Offline)?;
         let output = child.stdin.take().ok_or(SyncError::Offline)?;
+        let progress = ProgressClient::default();
+        let notifications = progress.notifications.clone();
         let handshake = tokio::select! {
-            result = timeout(Duration::from_secs(30), ().serve((input, output))) => result,
+            result = timeout(Duration::from_secs(30), progress.serve((input, output))) => result,
             _ = shutdown.cancelled() => { let _ = child.start_kill(); let _ = timeout(Duration::from_secs(5), child.wait()).await; return Err(SyncError::Offline.into()); },
         };
         let client = match handshake {
@@ -185,6 +231,7 @@ impl Remote {
         let mut remote = Self {
 
             client,
+            notifications,
             child,
             project: pair.remote_project.clone(),
             root_key: None,

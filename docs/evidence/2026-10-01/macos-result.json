@@ -1,0 +1,27 @@
+{
+  "source_id": "1e57f0ec4d50cec70c91f7aa4380a641ffc518fc2c39747197976c4e41d94389",
+  "platform": "macOS",
+  "commands": [
+    {
+      "command": "cargo run --locked -p xtask -- --check",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo check --locked --workspace --all-targets",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo clippy --locked --workspace --all-targets -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo test --locked --workspace",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo build --locked",
+      "exit_code": 0
+    }
+  ],
+  "binary_sha256": "29465e01678fa02a14a1cfda2de02d3b8cbc896c7c3d6cce0208094b04c52023"
+}

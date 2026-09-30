@@ -121,7 +121,10 @@ impl ServerHandler for Bridge {
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
 
-        Ok(super::router::call(self, request, context.ct).await?.into())
+        let cancellation = context.ct.clone();
+        Ok(super::progress::respond(context, |output| super::router::call(self, request, cancellation, output))
+            .await?
+            .into())
 
     }
 

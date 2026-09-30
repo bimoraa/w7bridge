@@ -22,7 +22,9 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
     let (client, server) = tokio::io::duplex(65536);
     let server = tokio::spawn(async move { bridge.serve(server).await.unwrap().waiting().await.unwrap() });
     let (input, output) = tokio::io::split(client);
-    let client = ().serve((input, output)).await.unwrap();
+    let progress = ProgressClient::default();
+    let notifications = progress.notifications.clone();
+    let client = progress.serve((input, output)).await.unwrap();
     let child = tokio::process::Command::new(executable)
         .arg("--list")
         .stdout(Stdio::null())
@@ -34,6 +36,7 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
     let remote = Remote {
 
         client,
+        notifications,
         child,
         project: "sample".into(),
         root_key: None,
@@ -54,10 +57,13 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
     let files = FileStore::new(root.path(), FileSettings { enabled: true, ..Default::default() }).unwrap();
     {
 
-        let forward = remote.forward(
-            "start_process",
-            json!({"command":"check"}).as_object().unwrap().clone(),
+        let (output, mut notifications) = tokio::sync::mpsc::channel(8);
+        let forward = remote.forward_with_output(
+            "run_command",
+            json!({"command":"check","wait":true}).as_object().unwrap().clone(),
             CancellationToken::new(),
+            Some(output),
+            Some("windows__sample"),
         );
         tokio::pin!(forward);
         assert!(timeout(Duration::from_millis(30), &mut forward).await.is_err());
@@ -82,7 +88,11 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
             .unwrap();
         let result = timeout(Duration::from_secs(2), &mut forward).await.unwrap().unwrap();
         assert_ne!(result.is_error, Some(true));
-        assert!(result.structured_content.unwrap()["process_id"].is_string());
+        let result = result.structured_content.unwrap();
+        assert!(result["process_id"].is_string());
+        let notification = notifications.try_recv().expect("SDK token에 해당하는 progress가 전달되어야 해");
+        assert_eq!(notification["project_id"], "windows__sample");
+        assert_eq!(notification["process_id"], result["process_id"]);
 
     }
     let invalid = remote

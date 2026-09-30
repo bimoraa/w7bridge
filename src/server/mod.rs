@@ -2,6 +2,7 @@
 
 mod handler;
 pub(crate) mod hub;
+mod progress;
 mod router;
 pub(crate) mod runtime;
 pub use handler::Bridge;

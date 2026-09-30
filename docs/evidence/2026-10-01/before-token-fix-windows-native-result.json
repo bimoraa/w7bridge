@@ -1,0 +1,74 @@
+{
+  "source_id": "11894f2f988b51bb2c4b2563bdf3bdcc3e405f93483e7ddb0f0abbbaea4fdf8f",
+  "files_verified": 146,
+  "os": "Windows-11-10.0.26200-SP0",
+  "commands": [
+    {
+      "command": [
+        "cargo",
+        "--version"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "rustc",
+        "--version"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "xtask",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--workspace",
+        "--all-targets"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "build",
+        "--locked"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "binary_sha256": "71982ee8b25f3b70db662faeb8a1eb7bc7bc2b8271df0c2918d2c6b0d33e4606"
+}

@@ -1,0 +1,74 @@
+{
+  "default": {
+    "process_id": "1790790939540014800-1",
+    "first_response_ms": 4701.159416996234,
+    "completion_ms": 6956.5750420006225,
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-UOnTyw",
+      "exit_code": 0,
+      "revision_at_completion": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+      "revision_at_start": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-UOnTyw)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+      "stderr_truncated": false,
+      "stdout": "STDOUT_1STDOUT_2",
+      "stdout_truncated": false,
+      "success": true
+    }
+  },
+  "notification_routes": {
+    "native-stream": {
+      "count": 9,
+      "process_id": "1790790945692134700-3",
+      "exit_code": 0
+    },
+    "parallel-build": {
+      "count": 6,
+      "process_id": "1790790945684641100-2",
+      "exit_code": 0
+    }
+  },
+  "stdout_before_completion_ms": 1987.0580839997274,
+  "stderr_before_completion_ms": 1987.0580839997274,
+  "stream_result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-YYfTvO",
+    "events": [],
+    "exit_code": 0,
+    "next_cursor": 18,
+    "process_id": "1790790945692134700-3",
+    "revision_at_completion": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+    "revision_at_start": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-YYfTvO)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.33s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+    "stderr_truncated": false,
+    "stdout": "STDOUT_1STDOUT_2",
+    "stdout_truncated": false,
+    "success": true,
+    "truncated": false
+  },
+  "parallel_result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-LPK0oY",
+    "events": [],
+    "exit_code": 0,
+    "next_cursor": 10,
+    "process_id": "1790790945684641100-2",
+    "revision_at_completion": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+    "revision_at_start": "f0f5b4deaf82b5001591dca5bfceebf5a9bbdf883f663cd6ffaeccccda217134",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge-2158-c5bdf24d719f\\e2e\\project\\.w7bridge\\build-LPK0oY)\nwarning: constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\nwarning: `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.39s\n",
+    "stderr_truncated": false,
+    "stdout": "",
+    "stdout_truncated": false,
+    "success": true,
+    "truncated": false
+  }
+}
