@@ -1,1 +1,27 @@
-/*! 공유 context 파일만 사용해. 채팅 추출이나 AI memory engine은 만들지 않아. */
+/*! context 파일의 UTF-8 내용과 관찰한 revision을 함께 반환해. */
+
+use super::state::MemoryState;
+use crate::FileError;
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+pub(crate) struct ContextDocument {
+
+    pub path: String,
+    pub content: Option<String>,
+    #[serde(flatten)]
+    pub state: MemoryState,
+
+}
+
+impl ContextDocument {
+
+    pub(super) fn decode( path: &str, bytes: Option<Vec<u8>>, ) -> Result<Self, FileError> {
+
+        let state = MemoryState::observed(bytes.as_deref());
+        let content = bytes.map(String::from_utf8).transpose().map_err(|_| FileError::Data)?;
+        Ok(Self { path: path.into(), content, state })
+
+    }
+
+}

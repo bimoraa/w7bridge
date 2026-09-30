@@ -1,7 +1,7 @@
 /*! 도구 발견과 이름별 dispatch의 단일 owner야. */
 
 use super::handler::Bridge;
-use crate::tools::{capture, execution, files, project, sync};
+use crate::tools::{capture, execution, files, memory, project, sync};
 use rmcp::{
     ErrorData,
     model::{CallToolRequestParams, CallToolResult, Tool},
@@ -13,6 +13,7 @@ pub(crate) fn definitions(screenshots: bool) -> Vec<Tool> {
     tools.extend(files::definitions());
     tools.extend(execution::definitions());
     tools.extend(sync::definitions());
+    tools.extend(memory::definitions());
     if screenshots {
 
         tools.push(capture::definition());
@@ -32,7 +33,7 @@ pub(crate) async fn call(
 
     match request.name.as_ref() {
 
-        "list_projects" => project::status::list_projects(&bridge.policy, arguments),
+        "list_projects" => project::status::list_projects(&bridge.policy, arguments).await,
         "run_command" => {
 
             execution::run_command::run(&bridge.policy, &bridge.executor, &bridge.coordinator, arguments, cancellation)
@@ -52,6 +53,11 @@ pub(crate) async fn call(
         name @ ("sync_status" | "wait_for_sync" | "sync_checkpoint") => {
 
             sync::call(&bridge.policy, &bridge.coordinator, name, arguments, cancellation).await
+
+        }
+        name @ ("read_memory" | "update_memory") => {
+
+            memory::call(&bridge.policy, bridge.file_slots.clone(), name, arguments, cancellation).await
 
         }
         "capture_screenshot" => capture::call(&bridge.capture, arguments, cancellation).await,

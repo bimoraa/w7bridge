@@ -124,7 +124,7 @@ pub(crate) async fn call(
 
 }
 
-fn failure(error: FileError) -> CallToolResult {
+pub(crate) fn failure(error: FileError) -> CallToolResult {
 
     let code = match &error {
 

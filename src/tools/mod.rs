@@ -3,6 +3,6 @@
 pub(crate) mod capture;
 pub(crate) mod execution;
 pub(crate) mod files;
-mod memory;
+pub(crate) mod memory;
 pub(crate) mod project;
 pub(crate) mod sync;
