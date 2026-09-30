@@ -1,0 +1,67 @@
+{
+  "started_at": 1790786506.5591319,
+  "commands": [
+    {
+      "command": [
+        "sc.exe",
+        "queryex",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "\nSERVICE_NAME: sshd \n        TYPE               : 10  WIN32_OWN_PROCESS  \n        STATE              : 4  RUNNING \n                                (STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)\n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x0\n        WAIT_HINT          : 0x0\n        PID                : 6668\n        FLAGS              : \n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "sc.exe",
+        "stop",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "\nSERVICE_NAME: sshd \n        TYPE               : 10  WIN32_OWN_PROCESS  \n        STATE              : 1  STOPPED \n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x0\n        WAIT_HINT          : 0x0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "sc.exe",
+        "query",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "\nSERVICE_NAME: sshd \n        TYPE               : 10  WIN32_OWN_PROCESS  \n        STATE              : 1  STOPPED \n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x0\n        WAIT_HINT          : 0x0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "sc.exe",
+        "start",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "\nSERVICE_NAME: sshd \n        TYPE               : 10  WIN32_OWN_PROCESS  \n        STATE              : 2  START_PENDING \n                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)\n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x1\n        WAIT_HINT          : 0x12c\n        PID                : 94164\n        FLAGS              : \n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "sc.exe",
+        "queryex",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "\nSERVICE_NAME: sshd \n        TYPE               : 10  WIN32_OWN_PROCESS  \n        STATE              : 2  START_PENDING \n                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)\n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x1\n        WAIT_HINT          : 0x12c\n        PID                : 94164\n        FLAGS              : \n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "sc.exe",
+        "queryex",
+        "sshd"
+      ],
+      "exit_code": 0,
+      "stdout": "\nSERVICE_NAME: sshd \n        TYPE               : 10  WIN32_OWN_PROCESS  \n        STATE              : 4  RUNNING \n                                (STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)\n        WIN32_EXIT_CODE    : 0  (0x0)\n        SERVICE_EXIT_CODE  : 0  (0x0)\n        CHECKPOINT         : 0x0\n        WAIT_HINT          : 0x0\n        PID                : 94164\n        FLAGS              : \n",
+      "stderr": ""
+    }
+  ],
+  "running": true,
+  "finished_at": 1790786507.1337032
+}

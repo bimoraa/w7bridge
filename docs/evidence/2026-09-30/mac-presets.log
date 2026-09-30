@@ -1,0 +1,10 @@
+   Compiling w7bridge v0.1.0 (/Users/hillaryabigail/.codex/worktrees/2158/w7bridge)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.31s
+     Running unittests src/lib.rs (target/debug/deps/w7bridge-8733e94d5b70a563)
+
+running 2 tests
+test security::presets::tests::discovery_does_not_enable_presets_and_restart_requires_sync_background ... ok
+test security::presets::tests::approved_presets_detect_repo_type_and_explicit_commands_win ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.01s
+

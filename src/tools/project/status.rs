@@ -26,7 +26,7 @@ pub(crate) fn definition() -> Tool {
 
 }
 
-pub(crate) async fn list_projects( policy: &Policy, discovery: Arc<Discovery>, arguments: Map<String, Value>, ) -> Result<CallToolResult, ErrorData> {
+pub(crate) async fn list_projects( policy: &Policy, discovery: Arc<Discovery>, folders: Arc<crate::security::discovery::Discovery>, arguments: Map<String, Value>, ) -> Result<CallToolResult, ErrorData> {
 
     if !arguments.is_empty() {
 
@@ -63,6 +63,23 @@ pub(crate) async fn list_projects( policy: &Policy, discovery: Arc<Discovery>, a
         }
 
     }
-    Ok(CallToolResult::structured(json!({ "projects": projects, "codex": snapshot })))
+    let discovered = tokio::task::spawn_blocking(move || folders.read())
+        .await
+        .map_err(|_| ErrorData::internal_error("폴더 project 조회 작업을 완료할 수 없습니다", None))?;
+    for candidate in &discovered.projects {
+
+        let root = candidate["root"].as_str().unwrap_or_default();
+        if policy.project_at(std::path::Path::new(root)).is_none()
+            && !projects
+                .iter()
+                .any(|entry| entry["roots"].as_array().is_some_and(|roots| roots.iter().any(|value| value == root)))
+        {
+
+            projects.push(candidate.clone());
+
+        }
+
+    }
+    Ok(CallToolResult::structured(json!({ "projects": projects, "codex": snapshot, "discovery": discovered })))
 
 }

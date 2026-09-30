@@ -28,7 +28,10 @@ pub(super) fn validate(
     }
     for entry in remote {
 
-        if entry.bytes > 1_048_576 || !valid_hash(&entry.sha256) || !seen.insert(entry.path.clone()) {
+        if entry.bytes > store.settings().max_file_bytes
+            || !valid_hash(&entry.sha256)
+            || !seen.insert(entry.path.clone())
+        {
 
             return Err(SyncError::Peer);
 

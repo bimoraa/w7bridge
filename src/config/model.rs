@@ -9,6 +9,8 @@ version 1의 검증된 설정이다. 필드는 외부에서 수정할 수 없다
 pub struct Config {
 
     pub(crate) codex: CodexSettings,
+    pub(crate) device_id: Option<String>,
+    pub(crate) discovery: DiscoverySettings,
     pub(crate) execution: ExecutionLimits,
     pub(crate) screenshots: ScreenshotSettings,
     #[cfg(windows)]
@@ -23,7 +25,11 @@ pub(super) struct RawConfig {
 
     pub(super) version: u32,
     #[serde(default)]
+    pub(super) device_id: Option<String>,
+    #[serde(default)]
     pub(super) codex: CodexSettings,
+    #[serde(default)]
+    pub(super) discovery: DiscoverySettings,
     #[serde(default)]
     pub(super) screenshots: ScreenshotSettings,
     #[serde(default)]
@@ -86,6 +92,10 @@ pub(crate) struct ProjectDefinition {
     #[serde(default)]
     pub files: FileSettings,
     #[serde(default)]
+    pub presets: Option<PresetSettings>,
+    #[serde(default)]
+    pub git: Option<GitSettings>,
+    #[serde(default)]
     pub commands: BTreeMap<String, CommandDefinition>,
 
 }
@@ -98,24 +108,86 @@ pub(crate) struct CommandDefinition {
     #[serde(default)]
     pub background: bool,
     #[serde(default)]
+    pub restart_on_sync: bool,
+    #[serde(default)]
+    pub source_snapshot: bool,
+    #[serde(default)]
     pub args: Vec<String>,
     #[serde(default)]
     pub env: BTreeMap<String, String>,
 
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GitSettings {
+
+    pub executable: PathBuf,
+
+}
+
+/** owner가 지정한 폴더만 탐색한다. 발견한 project에 권한을 추가하지 않는다. */
+#[derive(Clone, Debug, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub(crate) struct DiscoverySettings {
+
+    pub roots: Vec<PathBuf>,
+    pub max_depth: usize,
+
+}
+
+impl Default for DiscoverySettings {
+
+    fn default( ) -> Self {
+
+        Self { roots: Vec::new(), max_depth: 3 }
+
+    }
+
+}
+
+/** 로컬 owner가 승인한 toolchain에서만 preset을 만든다. 명시한 commands가 우선한다. */
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct PresetSettings {
+
+    pub executable: PathBuf,
+    #[serde(default)]
+    pub prefix_args: Vec<String>,
+    #[serde(default = "default_preset_kind")]
+    pub kind: String,
+
+}
+
+fn default_preset_kind( ) -> String {
+
+    "auto".into()
+
+}
+
 /** 로컬 config 소유자가 정하는 파일 공유 정책이다. 기본값은 비활성화다. */
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct FileSettings {
 
     pub enabled: bool,
     pub exclude_dirs: Vec<String>,
     pub context_files: Vec<String>,
+    pub max_file_bytes: usize,
 
 }
 
-#[derive(Deserialize)]
+impl Default for FileSettings {
+
+    fn default( ) -> Self {
+
+        Self { enabled: false, exclude_dirs: Vec::new(), context_files: Vec::new(), max_file_bytes: 64 * 1024 * 1024 }
+
+    }
+
+}
+
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SyncSettings {
 
@@ -131,7 +203,7 @@ fn default_interval() -> u64 {
 
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Pair {
 
@@ -148,6 +220,14 @@ pub(crate) struct Pair {
     pub port: Option<u16>,
     #[serde(default)]
     pub service: bool,
+    #[serde(default)]
+    pub bandwidth_bytes_per_second: u64,
+    #[serde(default)]
+    pub expected_device_id: Option<String>,
+    #[serde(default)]
+    pub git_executable: Option<PathBuf>,
+    #[serde(default)]
+    pub screenshot_config: Option<String>,
 
 }
 

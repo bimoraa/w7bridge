@@ -1,0 +1,135 @@
+# device/project 기반 작업 흐름
+
+Agent는 hub의 project ID와 owner가 등록한 command 이름만 선택한다. 실행 파일, 인자, 환경, root, SSH 계정과 update trust key는 owner 설정이다. `project_status`로 online, 선택한 peer의 sync, 다른 paired peer의 conflict, process handle과 마지막 오류를 함께 확인한다.
+
+## Windows owner 설정
+
+```toml
+version = 1
+device_id = "windows-dev"
+
+[codex]
+enabled = false
+
+[execution]
+timeout_seconds = 300
+output_bytes = 262144
+concurrency = 2
+
+[service]
+allowed_sid = "S-1-5-21-실제-계정-SID"
+
+[discovery]
+roots = ['D:\Projects']
+max_depth = 3
+
+[[projects]]
+id = "sample"
+root = 'D:\Projects\sample'
+requires_sync = true
+
+[projects.files]
+enabled = true
+max_file_bytes = 67108864
+exclude_dirs = ["artifacts"]
+
+[projects.presets]
+kind = "cargo"
+executable = 'D:\Toolchains\rust\bin\cargo.exe'
+
+[projects.git]
+executable = 'C:\Program Files\Git\cmd\git.exe'
+
+[projects.commands.run]
+executable = 'D:\Toolchains\rust\bin\cargo.exe'
+args = ["run", "--locked"]
+background = true
+restart_on_sync = true
+```
+
+실제 SID와 toolchain 경로를 지정해야 한다. Cargo preset은 `check/build/test/run --locked`를 생성하며 명시 command가 우선한다. Cargo check/build/test preset은 source snapshot을 사용한다. Node preset은 설치된 node_modules를 사용하는 원래 root에서 실행하며 snapshot 여부를 허위로 보장하지 않는다. `kind = "node"`는 package.json의 check/build/test/run script를 읽고 run이 없으면 dev를 사용한다. owner가 승인한 `bun.exe` 또는 `node.exe`와 npm CLI 경로를 `prefix_args`로 지정한다. `.cmd` launcher를 허용하지 않는다. discovery는 목록만 제공하며 발견한 root에 command나 파일 권한을 추가하지 않는다.
+
+Source snapshot은 공유 파일 정책으로 복사한 별도 root에서 명령을 실행한다. 결과에 `artifact_root`, 시작/완료 revision과 `revision_verified`가 포함된다. 다음 sync가 진행 중 build의 source를 바꾸지 않는다. snapshot에는 `.git`, node_modules와 cache가 없다. 그런 입력이 필요한 command는 owner가 명시 command를 등록하고 `source_snapshot = false`로 설정한다. 이 경우 시작/완료 hash가 같아도 실행 중 source가 고정됐다는 보장은 없다. build script가 OS 계정으로 할 수 있는 작업을 제한하는 OS sandbox는 별도다.
+
+## Mac hub 설정
+
+```toml
+version = 1
+interval_seconds = 2
+
+[[pairs]]
+local_root = "/Users/me/Developer/sample"
+remote_project = "sample"
+host = "windows-dev"
+service = true
+expected_device_id = "windows-dev"
+# 전용 설치 경로를 사용하는 경우 지정한다.
+# executable = "D:/Tools/w7bridge/w7bridge.exe"
+# config = "D:/Tools/w7bridge/owner.toml"
+git_executable = "/usr/bin/git"
+bandwidth_bytes_per_second = 524288
+# desktop 사용자로 실행하는 별도 opt-in config다.
+# screenshot_config = "D:/Tools/w7bridge/capture.toml"
+```
+
+```sh
+w7bridge hub --config /absolute/path/pairing.toml
+```
+
+Codex의 MCP command를 Mac의 w7bridge executable, args를 `hub --config /absolute/path/pairing.toml`로 등록한다. hub는 pairing watcher와 SSH 연결을 유지한다. SSH 실패 후 다시 연결하며 offline 상태도 로컬 MCP에서 조회할 수 있다. watcher가 이미 실행 중이면 동일 pair journal을 중복으로 쓰지 않고 기존 daemon을 유지한다. service pairing에서만 명령을 실행하므로 연결을 다시 열어도 process handle은 같은 Windows service에서 찾을 수 있다.
+
+여러 Windows는 `[[pairs]]`를 추가한다. 같은 Mac root도 서로 다른 Windows에 연결할 수 있으며 baseline과 Git handoff state는 pair별로 분리한다. 여러 Mac이 한 Windows project를 사용하는 경우 새 peer protocol이 각 Mac의 checkpoint와 build 요청을 구분한다. 다른 Mac의 checkpoint는 선택한 Mac의 fresh 요청을 확인하지 못한다. 활성 paired peer의 conflict는 build를 막는다. peer ID를 선택하지 않은 직접 client는 여러 peer일 때 명령을 거부하므로 hub의 device/project ID를 사용한다.
+
+## MCP 호출 순서
+
+```json
+{"name":"list_projects","arguments":{}}
+{"name":"project_status","arguments":{"project_id":"windows-dev__sample"}}
+{"name":"start_process","arguments":{"project_id":"windows-dev__sample","command":"build"}}
+{"name":"read_process_output","arguments":{"project_id":"windows-dev__sample","process_id":"응답의 ID","cursor":0,"wait_seconds":30}}
+```
+
+`start_process`와 `run_command` 모두 실행 전에 fresh sync round를 요청한다. conflict면 즉시 실패하고 offline/미완료 상태면 대기 한도 후 실패한다. `start_process`는 handle을 빨리 돌려주며 `run_command`는 완료 결과를 돌려준다. 완료 전에는 `list_processes`에서도 handle을 찾을 수 있다. 로그의 `next_cursor`를 다음 호출의 `cursor`에 넣는다. 오래된 로그가 ring 한도 밖으로 나갔으면 `truncated = true`다. 연결이 끊겨 응답 결과를 모르면 명령을 재실행하지 말고 handle과 event를 조회한다.
+
+`stop_process`는 sync 실패 중에도 전체 process tree를 종료한다. timeout은 foreground command에 적용한다. background command는 명시 stop 또는 host shutdown까지 계속 실행한다. `restart_on_sync = true`는 background + requires_sync command만 허용한다. 같은 revision checkpoint는 restart하지 않으며 build/test preset에 자동 restart를 붙이지 않는다.
+
+`read_events`는 project event cursor와 service `boot_id`를 반환한다. service restart 뒤 boot ID가 바뀌면 cursor를 초기화한다. process handle, live log와 event ring은 service 메모리 상태다. SSH reconnect 후 유지되지만 service crash/restart 뒤 process를 자동 재실행하거나 이전 handle을 복원하지 않는다. 파일 journal과 history는 project의 `.w7bridge`에 보존한다.
+
+## 안전한 sync와 recovery
+
+최초 sync에서 한쪽에만 있는 파일은 반대쪽에 전달한다. 같은 경로의 내용이 다르면 양쪽 원본과 conflict snapshot을 보존한다. 파일 교체와 restore는 예상 SHA-256과 현재 파일을 비교한다. `.git`, target, node_modules, cache와 build output은 기본 제외이며 추가 output은 owner가 `exclude_dirs`에 지정한다. `.gitignore`는 공유 제외 규칙이 아니며 context 파일도 전달한다.
+
+큰 파일은 64 KiB 고정 chunk로 나눠 SHA-256을 확인한다. 변경 chunk만 전송하고 staging manifest를 통해 중단 후 missing chunk부터 이어간다. 같은 hash의 파일을 이동했으면 기존 content를 재사용한다. source/context를 먼저, 같은 우선순위에서는 작은 파일을 먼저 전달하고 삭제는 마지막이다. 한 round의 파일 목록은 유한하다. 대역폭은 양방향 chunk의 base64 payload와 메시지 overhead 추정값을 기준으로 제한한다. 정확한 TLS/IP wire byte 한도는 아니다. legacy peer에서 제한을 보장할 수 없으면 pairing을 거부한다.
+
+`sync_history`는 bridge가 관찰한 파일 교체/삭제의 이전·결과 hash를 제공한다. 임의 editor의 모든 중간 저장을 기록하지 않는다. 최대 64개 record와 256 MiB content를 보관하며 진행 중 recovery record는 제거하지 않는다. `restore_file`에는 revision ID, previous/result와 필수 `expected_hash`가 필요하다. 파일이 이후 변경됐으면 restore를 거부한다. blob이 corrupt하면 hash 검증에서 중단한다. `abort_transfer`는 지정한 staging transfer만 정리하며 현재 파일을 변경하지 않는다.
+
+## Git handoff
+
+양쪽 owner가 Git executable을 승인하면 file sync 완료 뒤 Git state도 비교한다. raw `.git` 파일은 sync하지 않는다. bundle과 staged object pack으로 commit history, HEAD/branch, refs와 index를 인계하고 실제 source는 동일한 파일 sync 정책을 사용한다. source의 hooks, credential, user config와 사용자 계정 설정을 복사하지 않는다. origin은 지원하는 공개 HTTPS/SSH 주소만 남기고 credential/query를 제거한다. 자동 commit/push하지 않는다.
+
+한쪽에만 repository가 있으면 빈 쪽에 import한다. 이후 baseline에서 한쪽만 변경됐으면 반대쪽에 적용한다. 양쪽 Git state가 달라졌으면 conflict로 build를 중단한다. apply 직전 대상 Git state와 source manifest를 다시 확인하고 기존 metadata를 recovery backup으로 보존한다. Git backup은 자동 삭제하지 않는다. staged/unstaged/untracked와 rename/delete는 file 상태와 index를 함께 전달한다.
+
+기존 linked worktree의 metadata 교체, submodule/symlink index, 공유 정책에서 제외된 tracked 파일과 활성 merge/rebase는 fail closed다. 기존 linked worktree를 임의로 독립 repo로 바꾸지 않는다. Git archive 한도는 64 MiB, 로컬 metadata recovery 복사는 256 MiB/10000 entry/depth 32다. 지원 범위 밖 project는 원본을 보존하고 오류를 해결하기 전 build를 중단한다.
+
+## 서명된 automatic update
+
+```toml
+version = 1
+manifest_url = "https://owner.example.invalid/w7bridge/windows.json"
+public_key_base64 = "owner가 pin한 Ed25519 public key"
+installed_executable = 'D:\Tools\w7bridge\w7bridge.exe'
+service = true
+interval_seconds = 3600
+```
+
+```sh
+w7bridge update --config /absolute/path/update.toml --status
+w7bridge update --config /absolute/path/update.toml --once
+w7bridge update install --config /absolute/path/update.toml
+```
+
+자동 helper는 별도 executable에서 실행하며 기존 owner registry/config를 보존한다. manifest는 Ed25519 서명, 증가하는 sequence, 지원 OS/architecture/protocol, HTTPS artifact의 크기/SHA-256과 candidate version을 확인한다. 실패와 interrupted replacement는 이전 binary backup으로 recovery한다. update 설정과 private signing key는 MCP client 입력으로 받지 않는다.
+
+Windows helper는 현재 사용자의 Limited/로그인 task다. service binary를 갱신하려면 해당 계정이 설치 디렉터리 쓰기와 SCM start/stop 권한을 가져야 한다. 권한이 없으면 자동 update를 실패로 보고하며 더 높은 권한으로 우회하지 않는다. service는 기존 SCM 자동 시작을 사용하지만 updater는 로그인 전 실행을 보장하지 않는다. macOS helper는 사용자 LaunchAgent다. 설치 후 같은 trust key와 URL을 계속 사용한다. release hosting과 signing key 배포는 owner가 준비해야 하며 기본 public update channel은 없다.
+
+검증 source와 현재 evidence 경계는 [기능 수용 기준](feature_acceptance.md)에 기록한다.

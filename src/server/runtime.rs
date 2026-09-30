@@ -380,8 +380,30 @@ pub(crate) mod service {
         let mut output = tokio::io::stdout();
         let upload = tokio::io::copy(&mut input, &mut writer);
         let download = tokio::io::copy(&mut reader, &mut output);
-        tokio::pin!(upload, download);
-        tokio::select! { result = upload => { result?; }, result = download => { result?; }, _ = tokio::signal::ctrl_c() => {} }
+        let interrupt = async {
+
+            if let Err(error) = tokio::signal::ctrl_c().await {
+
+                eprintln!("Ctrl-C listener를 사용할 수 없어 transport 종료를 기다립니다: {error}");
+                std::future::pending::<()>().await;
+
+            }
+
+        };
+        tokio::pin!(upload, download, interrupt);
+        tokio::select! {
+            result = upload => {
+                let _bytes = result?;
+                #[cfg(debug_assertions)]
+                eprintln!("relay stdin 종료: {_bytes} bytes");
+            },
+            result = download => {
+                let _bytes = result?;
+                #[cfg(debug_assertions)]
+                eprintln!("relay service pipe 종료: {_bytes} bytes");
+            },
+            _ = interrupt => {},
+        }
         Ok(())
 
     }

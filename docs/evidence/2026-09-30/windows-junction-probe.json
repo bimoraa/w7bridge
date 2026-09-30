@@ -1,0 +1,47 @@
+[
+  {
+    "command": [
+      "cmd.exe",
+      "/d",
+      "/c",
+      "D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\make.cmd"
+    ],
+    "exit_code": 0,
+    "stdout": "\nD:\\w7bridge-2158-c5bdf24d719f>mklink /J \"D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\link\" \"D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\outside\" \nJunction created for D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\link <<===>> D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\outside\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      "$ErrorActionPreference='Stop'; New-Item -ItemType Junction -Path 'D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\ps-link' -Target 'D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\\outside'"
+    ],
+    "exit_code": 0,
+    "stdout": "\n\n    Directory: D:\\w7bridge-2158-c5bdf24d719f\\junction-probe\n\n\nMode                 LastWriteTime         Length Name                                                                 \n----                 -------------         ------ ----                                                                 \nd----l         9/30/2026  10:43 PM                ps-link                                                              \n\n\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "fsutil.exe",
+      "fsinfo",
+      "volumeinfo",
+      "C:"
+    ],
+    "exit_code": 1,
+    "stdout": "Error 5: Access is denied.\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "fsutil.exe",
+      "fsinfo",
+      "volumeinfo",
+      "D:"
+    ],
+    "exit_code": 1,
+    "stdout": "Error 5: Access is denied.\n",
+    "stderr": ""
+  }
+]

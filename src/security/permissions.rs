@@ -34,6 +34,17 @@ impl Policy {
             name(&project.id)?;
             project.root = canonical(&project.root, true)?;
             project.files.validate().map_err(|_| PolicyError::Files)?;
+            super::presets::apply(&mut project)?;
+            if let Some(git) = project.git.as_mut() {
+
+                if !project.files.enabled || !project.requires_sync {
+
+                    return Err(PolicyError::Files);
+
+                }
+                git.executable = canonical(&git.executable, false)?;
+
+            }
             if project.requires_sync && !project.files.enabled {
 
                 return Err(PolicyError::Files);
@@ -46,6 +57,8 @@ impl Policy {
                 command.executable = canonical(&command.executable, false)?;
 
                 if command.args.iter().any(|arg| arg.contains('\0'))
+                    || command.source_snapshot && (!project.files.enabled || command.background)
+                    || command.restart_on_sync && (!command.background || !project.requires_sync)
                     || command
                         .env
                         .iter()
@@ -87,6 +100,28 @@ impl Policy {
     pub fn requires_sync(&self, project_id: &str) -> Result<bool, PolicyError> {
 
         Ok(self.projects.get(project_id).ok_or(PolicyError::Unknown)?.requires_sync)
+
+    }
+
+    pub fn root( &self, project_id: &str, ) -> Result<&Path, PolicyError> {
+
+        Ok(&self.projects.get(project_id).ok_or(PolicyError::Unknown)?.root)
+
+    }
+
+    pub(crate) fn git( &self, project_id: &str, ) -> Result<crate::git::Repository, String> {
+
+        let project = self.projects.get(project_id).ok_or("등록된 project가 없습니다")?;
+        let settings = project.git.as_ref().ok_or("project의 Git handoff가 활성화되지 않았습니다")?;
+        if canonical(&settings.executable, false).ok().as_ref() != Some(&settings.executable) {
+
+            return Err("Git executable이 변경되었습니다".into());
+
+        }
+        Ok(crate::git::Repository::new(
+            self.files(project_id).map_err(|error| error.to_string())?,
+            settings.executable.clone(),
+        ))
 
     }
 

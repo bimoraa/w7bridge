@@ -1,0 +1,66 @@
+# 전체 기능 수용 기준 — 진행 중
+
+작업 branch는 `codex/sync-safety-e2e`, 시작 commit은 `5d61bad`다. 진행 상태는 구현 완료나 운영 검증을 의미하지 않는다. 이전 [sync 검증](sync_validation.md)은 이전 snapshot의 증거이며 이번 source의 증거로 재사용하지 않는다.
+
+| 기능 | 구현 상태 | 필수 검증 |
+| --- | --- | --- |
+| fresh sync 후 build/test | peer별 fresh generation gate + snapshot revision 확인 | 최신 Mac revision, conflict, offline, 취소 |
+| stdout/stderr와 process handle | 모든 command handle, bounded ring + long-poll/cursor | 완료 전 양 stream, cursor replay, 연결 종료와 복구 |
+| reconnect/resume | 기존 daemon backoff와 durable journal | 실제 SSH 단절, reconnect, 응답 유실 |
+| 인증/암호화 | SSH key/host key, forwarding 차단 | trusted key 성공, 잘못된 host key/key 거부 |
+| project file 경계 | 기존 정책 + Windows reparse point 차단 | traversal, symlink/junction, 미등록 root |
+| smart ignore | 기존 공통 정책 | Git metadata, build/cache 제외, context 포함 |
+| cancel/timeout/restart | Job/process group + background opt-in restart | 전체 자식 종료, build/test 재실행 금지 |
+| crash/initial sync 안전 | 기존 journal/conflict snapshot | crash 후 hash 일치, 기존 양쪽 원본 보존 |
+| E2E | 실제 Mac edit → Windows check/build/test → log → screenshot 통과 | 최신 revision/hash, exit code, 실제 화면 증거 |
+| command preset | Cargo/Node owner opt-in 구현 | 명시 command 우선, 무권한 discovery 거부 |
+| folder discovery | 제한된 root/depth scan 구현 | Cargo/Node 탐색, symlink와 artifact 제외 |
+| 여러 device | pair별 journal + device/project ID + peer checkpoint 분리 | 복수 peer, 중복 remote/root 거부, 양방향 handoff |
+| bandwidth control | 양방향 payload throttle 구현 | 양방향 실제 전송량/시간, 취소 |
+| file priority | source/context 우선, 작은 파일 우선 구현 | 작은 source 우선, 지속 변경에도 large file 진행 |
+| delta/chunk sync | 64 KiB chunk + SHA-256 구현 | 변경 chunk만 전송, 최종 SHA-256 |
+| transfer resume | durable missing-chunk journal 구현 | 끊긴 offset/chunk부터 재개, peer restart |
+| rename/move | 동일 hash content 재사용 구현 | 같은 hash 재사용, conflict와 stale target 거부 |
+| history/rollback | bounded revision history + expected-hash restore 구현 | 이전 내용 조회, expected hash로 restore |
+| health/events | project_status + bounded event stream 구현 | device/peer/sync/process/error, cursor/boot ID |
+| automatic update | 서명된 HTTPS updater + helper + recovery 구현 | 신뢰한 artifact, config 보존, 실패 rollback |
+| protocol version | capability 조회와 공통 version 선택 구현 | 공통 version 선택, 지원하지 않는 peer 거부 |
+| Git 자동 import | bundle/staged objects + metadata backup 구현 | bundle/clone, history/HEAD/branch/origin, 대상 existing 보존 |
+| Git handoff 양방향 | pair baseline + CAS/WAL 구현 | staged/unstaged/untracked, rename/delete, offline 후 resume |
+
+## 증거 계약
+
+- macOS gate, cross-target, Windows-native gate, live MCP/SCM, 두 기기 E2E를 별도 기록한다.
+- source snapshot hash, OS, 시각, 실행 command, exit code, 전체 로그와 fixture를 보존한다. credential과 private config는 포함하지 않는다.
+- screenshot은 실제 MCP 결과를 확인한다. build 결과는 exit code, 로그와 revision/hash로 별도 검증한다.
+- 실제 PC reboot/장시간 전원 종료는 실행 전 사용자의 별도 조율이 필요하다. service/transport simulation을 실제 reboot나 7시간 offline 검증으로 쓰지 않는다.
+- file tool 경계는 OS sandbox가 아니다. 현재 범위에서는 agent의 file access를 제한하며 build/script의 OS 격리는 구현되지 않았다.
+- Git metadata를 live-sync하지 않는다. 대상 existing repo를 reset/overwrite하지 않고 credential·사용자 identity를 복사하지 않는다. 자동 commit/push하지 않는다.
+
+## 현재 확인된 결과
+
+- macOS formatter/check/Clippy/workspace test와 build는 통과했다. library test 65개가 통과했고 integration/xtask suite도 통과했다. subprocess fixture와 platform 전용 ignored test는 별도이며 pass로 합산하지 않는다.
+- Windows-native source `0c0074ed2a4a8444b0727d9fc629ef5bdd8f0fad306c4751abb473fa0051969c`의 모든 gate와 build가 통과했다. `windows-native-result.json`의 모든 exit code가 0이고 전체 `windows-native.log`를 보존한다.
+- 이 source는 headless relay의 Ctrl-C listener 오류를 종료 신호로 처리하지 않는다. manifest의 모든 source hash와 결과 exit code를 확인했다. native gate 이후 production Rust 변경은 없고 두 Python fixture script만 수정했다.
+- Windows lock contention과 Git extended path 문제를 native test에서 수정했다. junction fixture는 실제 PowerShell Junction 생성으로 검증하며, install fixture는 Codex discovery를 꺼 실제 사용자 project를 읽지 않는다.
+- peer별 fresh sync gate의 command forwarding regression을 실제 MCP transport로 검증한다. 다른 peer checkpoint로 통과하지 않으며 RPC error를 connection loss로 바꾸지 않는다. peer 대기 경로도 16개 한도를 적용한다.
+- 임시 Windows SCM service가 실제 실행되고 MCP read_events/list_processes/project_status 응답이 돌아왔다. Windows에만 있던 fixture source는 Mac으로 import됐다.
+- SSH relay가 약 0.3초 뒤 exit 0으로 닫히는 현상은 사용자가 승인한 OpenSSH service restart 이후 재현되지 않았다. 3초 Python probe가 양쪽 출력을 반환했고 MCP long-poll도 유지됐다. restart 전후 SCM 상태는 `windows-sshd-restart.json`에 기록한다. Wi-Fi 원인으로 확정하지 않는다.
+- 실제 Mac 수정 `mac-edit-v2`가 Windows로 sync됐다. check/build/test 모두 exit 0, `revision_verified=true`, 동일한 시작/완료 hash `79e66fa1039431a0905f35c70de5db6a81b7789e2caaaaf6f259a674d853a0d7`를 반환했다. stdout/stderr stream과 cursor replay도 확인했다.
+- hub transport를 닫고 다시 연결한 뒤 기존 check/build/test/run handle을 조회했다. 완료된 build/test를 다시 실행하지 않고 기존 결과를 읽었으며 running app의 log도 유지됐다. 실제 Wi-Fi 차단 시험과는 구분한다.
+- 실제 Windows browser의 HTTP 응답과 MCP screenshot에서 `Compiled revision: mac-edit-v2`를 확인했다. `windows-verified.png`는 2560×1440 화면이며 `e2e-result.json`과 `e2e-mcp.jsonl`에 exit code, log, revision, screenshot metadata, app 취소 결과를 보존한다. screenshot만으로 build 성공을 판정하지 않는다.
+- fixture는 독립 Cargo workspace를 명시한다. Python MCP reader는 screenshot JSON frame을 위해 16 MiB까지 허용하고 resume 시 기존 running app을 재사용한다. 임시 SCM service와 검증 task만 제거했으며 permanent installation과 fixture source/evidence는 보존했다.
+
+## 남은 검증과 지원 경계
+
+- 실제 네트워크 단절/장시간 offline/reboot, service crash 뒤 recovery, bandwidth의 실측 전송량과 signed HTTPS release update는 live 검증되지 않았다. 해당 안전성은 chunk/journal/history/updater 자동 test와 구분한다.
+- process handle/log는 SSH reconnect 동안 유지된다. service restart 후 이전 process/log를 복원하는 persistent process store는 구현되지 않았다. foreground command를 자동 재실행하지 않는다.
+- OS build sandbox, 기존 linked-worktree metadata 교체, 공개 update channel은 제공되지 않는다.
+
+## 재현 도구
+
+- `xtask/scripts/snapshot.py`: Cargo.lock, source, tests, formatter와 fixture input의 SHA-256 manifest/archive.
+- `xtask/scripts/verify_windows.py`: 기존 owned source의 hash를 확인한 후 Windows-native gates, 전체 log, exit code와 binary SHA-256을 기록한다. Task Scheduler는 검증 중 임시 on-demand task로 사용한다.
+- `xtask/scripts/fixture_windows.py`: 기존 service가 없는 경우에만 owned root에 fixture/service를 만든다. stop/reinstall도 등록된 owned root/config를 확인한다.
+- `xtask/scripts/verify_e2e.py`: initial import, Mac edit, named command handle/cursor/result/revision과 MCP screenshot을 검증한다. reconnect recovery는 read-only 요청만 retry하고 결과가 불명확한 command를 자동 반복하지 않는다.
+- `xtask/scripts/render_windows.py`: 실행된 app의 실제 HTTP body를 확인한 후 Windows browser를 연다.

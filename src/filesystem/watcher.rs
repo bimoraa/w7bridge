@@ -19,11 +19,13 @@ pub(crate) async fn watch(
 ) -> Result<(), Failure> {
 
     let files = FileStore::new(&pair.local_root, FileSettings { enabled: true, ..Default::default() })?;
+    let binding = pair.binding()?;
+    let lock_name = format!("sync-{}.lock", crate::filesystem::digest(binding.as_bytes()));
     if status {
 
-        let session = Session::open(files.clone(), pair.binding()?)?;
+        let session = Session::open_pair(files.clone(), binding.clone())?;
         let mut report = session.report().clone();
-        match files.lock("sync.lock") {
+        match files.lock(&lock_name) {
 
             Ok(_) => {
 
@@ -39,8 +41,14 @@ pub(crate) async fn watch(
         return Ok(());
 
     }
-    let _lock = files.lock("sync.lock")?;
-    let mut session = Session::open(files.clone(), pair.binding()?)?;
+    // 구버전 daemon이 살아 있으면 새 pair journal과 동시에 쓰지 않아.
+    if files.load_metadata("sync.json")?.is_some() {
+
+        let _legacy = files.lock("sync.lock")?;
+
+    }
+    let _lock = files.lock(&lock_name)?;
+    let mut session = Session::open_pair(files.clone(), binding.clone())?;
     let mut remote: Option<Remote> = None;
     let mut backoff = interval;
     let mut last = String::new();
@@ -73,7 +81,7 @@ pub(crate) async fn watch(
                         Ok((settings, identity)) => {
 
                             let store = files.with_settings(settings)?;
-                            let replacement = Session::open(store, pair.binding()?);
+                            let replacement = Session::open_pair(store, binding.clone());
                             match replacement {
 
                                 Ok(mut replacement) => {

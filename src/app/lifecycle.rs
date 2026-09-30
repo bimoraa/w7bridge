@@ -84,9 +84,9 @@ pub(super) async fn run_sync(args: &[OsString]) -> Result<(), Failure> {
 
         }
         let root = pair.local_root.canonicalize()?;
-        if roots.iter().any(|other: &PathBuf| root.starts_with(other) || other.starts_with(&root)) {
+        if roots.iter().any(|other: &PathBuf| root != *other && (root.starts_with(other) || other.starts_with(&root))) {
 
-            return Err("pairing root는 중복되거나 서로 포함할 수 없습니다".into());
+            return Err("서로 다른 pairing root는 서로 포함할 수 없습니다".into());
 
         }
         roots.insert(root);
@@ -122,7 +122,7 @@ pub(super) async fn run_sync(args: &[OsString]) -> Result<(), Failure> {
 
 }
 
-fn validate_sync_settings(settings: &SyncSettings) -> Result<(), Failure> {
+pub(super) fn validate_sync_settings(settings: &SyncSettings) -> Result<(), Failure> {
 
     if settings.version != 1
         || !(1..=60).contains(&settings.interval_seconds)
@@ -136,6 +136,32 @@ fn validate_sync_settings(settings: &SyncSettings) -> Result<(), Failure> {
     for pair in &settings.pairs {
 
         pair.options()?;
+        if let Some(config) = &pair.screenshot_config {
+
+            let mut capture = pair.clone();
+            capture.service = false;
+            capture.config = Some(config.clone());
+            capture.options()?;
+
+        }
+        if pair.bandwidth_bytes_per_second > 1_073_741_824 {
+
+            return Err("bandwidth_bytes_per_second는 0..=1073741824여야 합니다".into());
+
+        }
+        if pair.git_executable.as_ref().is_some_and(|path| !path.is_absolute() || !path.is_file())
+            || pair.expected_device_id.as_ref().is_some_and(|id| {
+
+                id.is_empty()
+                    || id.len() > 64
+                    || !id.bytes().all(|byte| byte.is_ascii_alphanumeric() || b"_-".contains(&byte))
+
+            })
+        {
+
+            return Err("git_executable은 승인한 절대 파일, expected_device_id는 영문·숫자 ID여야 합니다".into());
+
+        }
         if !pair.local_root.is_absolute()
             || pair.remote_project.is_empty()
             || pair.remote_project.len() > 64

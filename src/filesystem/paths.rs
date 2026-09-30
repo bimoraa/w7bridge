@@ -12,7 +12,10 @@ impl FileSettings {
     /** 상대 경로를 검증한다. 명시한 context 파일의 부모를 custom exclude로 막을 수 없다. */
     pub fn validate(&self) -> Result<(), FileError> {
 
-        if self.exclude_dirs.len() > 64 || self.context_files.len() > 64 {
+        if self.exclude_dirs.len() > 64
+            || self.context_files.len() > 64
+            || !(1_048_576..=64 * 1024 * 1024).contains(&self.max_file_bytes)
+        {
 
             return Err(FileError::Limit);
 
@@ -115,7 +118,7 @@ impl FileStore {
             resolved.push(part);
             match fs::symlink_metadata(&resolved) {
 
-                Ok(metadata) if metadata.is_symlink() => return Err(FileError::Path),
+                Ok(metadata) if redirected(&metadata) => return Err(FileError::Path),
                 Ok(_) => {}
                 Err(error) if allow_missing && error.kind() == std::io::ErrorKind::NotFound => {}
                 Err(error) => return Err(error.into()),
@@ -135,7 +138,7 @@ impl FileStore {
             current.push(part);
             match fs::symlink_metadata(&current) {
 
-                Ok(metadata) if metadata.is_symlink() || !metadata.is_dir() => return Err(FileError::Path),
+                Ok(metadata) if redirected(&metadata) || !metadata.is_dir() => return Err(FileError::Path),
                 Ok(_) => {}
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => fs::create_dir(&current)?,
                 Err(error) => return Err(error.into()),
@@ -144,6 +147,26 @@ impl FileStore {
 
         }
         Ok(())
+
+    }
+
+}
+
+/** Windows junction을 포함한 모든 reparse point를 거부한다. */
+pub(crate) fn redirected( metadata: &fs::Metadata, ) -> bool {
+
+    #[cfg(windows)]
+    {
+
+        use std::os::windows::fs::MetadataExt;
+        use windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT;
+        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+
+    }
+    #[cfg(not(windows))]
+    {
+
+        metadata.is_symlink()
 
     }
 
@@ -232,7 +255,7 @@ fn under(path: &str, directory: &str) -> bool {
 
 }
 
-fn excluded_builtin(path: &str) -> bool {
+pub(crate) fn excluded_builtin(path: &str) -> bool {
 
     path.split('/').any(|part| {
 
@@ -256,6 +279,7 @@ fn excluded_builtin(path: &str) -> bool {
                 | ".ruff_cache"
                 | ".codebase-memory"
                 | ".w7bridge"
+                | ".w7bridge-update"
                 | ".ds_store"
         )
 

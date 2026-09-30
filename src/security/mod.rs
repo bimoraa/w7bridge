@@ -2,6 +2,8 @@
 
 mod auth;
 pub(crate) mod codex;
+pub(crate) mod discovery;
 mod permissions;
+mod presets;
 mod trusted_device;
 pub(crate) use permissions::Policy;

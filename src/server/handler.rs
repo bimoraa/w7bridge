@@ -22,14 +22,17 @@ MCP 도구를 불변 registry와 공유 executor에 연결한다.
 #[derive(Clone)]
 pub struct Bridge {
 
-    pub(super) policy: Arc<Policy>,
+    pub(crate) policy: Arc<Policy>,
     pub(super) codex: Arc<crate::security::codex::Discovery>,
-    pub(super) executor: Arc<Executor>,
+    pub(super) discovery: Arc<crate::security::discovery::Discovery>,
+    pub(crate) executor: Arc<Executor>,
     tools: Arc<Vec<Tool>>,
     pub(super) file_slots: Arc<Semaphore>,
-    pub(super) processes: Arc<Processes>,
-    pub(super) coordinator: Arc<crate::sync::Coordinator>,
+    pub(crate) processes: Arc<Processes>,
+    pub(crate) coordinator: Arc<crate::sync::Coordinator>,
     pub(super) capture: Arc<crate::capture::Capture>,
+    pub(crate) events: Arc<crate::protocol::message::Events>,
+    pub(crate) device_id: String,
 
 }
 
@@ -47,16 +50,25 @@ impl Bridge {
 
         let enabled = config.screenshots.enabled;
         let executor = Arc::new(Executor::new(config.execution, shutdown.clone()));
+        let events = Arc::new(crate::protocol::message::Events::new());
+        let device_id = config.device_id.unwrap_or_else(|| {
+
+            std::env::var("COMPUTERNAME").or_else(|_| std::env::var("HOSTNAME")).unwrap_or_else(|_| "local".into())
+
+        });
         Ok(Self {
 
             codex: Arc::new(crate::security::codex::Discovery::new(config.codex)),
+            discovery: Arc::new(crate::security::discovery::Discovery::new(config.discovery)),
             policy: Arc::new(Policy::new(config.projects)?),
             executor: executor.clone(),
-            processes: Arc::new(Processes::new(executor)),
+            processes: Arc::new(Processes::new(executor, events.clone())),
             tools: Arc::new(super::router::definitions(enabled)),
             file_slots: Arc::new(Semaphore::new(2)),
             coordinator: Arc::new(crate::sync::Coordinator::new()),
             capture: Arc::new(crate::capture::Capture::new(enabled, shutdown)),
+            events,
+            device_id,
 
         })
 

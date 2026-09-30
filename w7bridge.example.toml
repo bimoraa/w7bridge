@@ -1,5 +1,7 @@
 # w7bridge.toml로 복사해. 기본 상태에서는 실행 가능한 프로젝트가 없어.
 version = 1
+# pairing에서 고정된 device identity를 쓰려면 owner가 지정해.
+# device_id = "windows-dev"
 projects = []
 
 # Codex의 로컬 project 목록은 자동으로 읽어. command·파일 권한은 별도로 등록해.
@@ -32,3 +34,5 @@ enabled = false
 #
 # [projects.commands.test.env]
 # RUST_BACKTRACE = "1"
+
+# hub/preset/Git/update의 실제 owner 설정은 docs/bridge_workflow.md를 참고해.

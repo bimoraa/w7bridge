@@ -14,9 +14,11 @@ resolver = "3"
 
 [dependencies]
 base64 = "0.22"
+ed25519-dalek = "2.2"
 fs2 = "0.4"
 process-wrap = { version = "10.0.1", default-features = false, features = ["tokio1", "job-object", "kill-on-drop", "process-group"] }
 rmcp = { version = "3.5.0", default-features = false, features = ["client", "server", "transport-io"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 rusqlite = { version = "0.40.2", default-features = false, features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

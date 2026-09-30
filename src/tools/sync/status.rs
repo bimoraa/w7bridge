@@ -13,6 +13,7 @@ pub(super) fn read(
     policy: &Policy,
     coordinator: &Coordinator,
     args: Map<String, Value>,
+    peer: Option<&str>,
 ) -> Result<Result<Value, String>, ErrorData> {
 
     let args: Arguments = serde_json::from_value(Value::Object(args))
@@ -20,6 +21,6 @@ pub(super) fn read(
     Ok(policy
         .files(&args.project_id)
         .map_err(|error| error.to_string())
-        .and_then(|files| coordinator.status(&args.project_id, &files)))
+        .and_then(|files| coordinator.status_peer(&args.project_id, &files, peer)))
 
 }

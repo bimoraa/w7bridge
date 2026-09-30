@@ -54,6 +54,25 @@ impl Config {
             return Err(ConfigError::Invalid("version은 1이어야 합니다"));
 
         }
+        if config.device_id.as_ref().is_some_and(|id| {
+
+            id.is_empty()
+                || id.len() > 64
+                || !id.bytes().all(|byte| byte.is_ascii_alphanumeric() || b"_-".contains(&byte))
+
+        }) {
+
+            return Err(ConfigError::Invalid("device_id는 1..=64자의 영문, 숫자, 밑줄, 하이픈이어야 합니다"));
+
+        }
+        if config.discovery.roots.len() > 16
+            || config.discovery.max_depth > 8
+            || config.discovery.roots.iter().any(|root| !root.is_absolute())
+        {
+
+            return Err(ConfigError::Invalid("discovery는 절대 root 16개, depth 0..=8만 허용합니다"));
+
+        }
 
         let limits = &config.execution;
 
@@ -89,6 +108,8 @@ impl Config {
         Ok(Self {
 
             codex: config.codex,
+            device_id: config.device_id,
+            discovery: config.discovery,
             execution: config.execution,
             screenshots: config.screenshots,
             projects: config.projects,
