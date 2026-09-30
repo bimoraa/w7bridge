@@ -1,3 +1,5 @@
 /target/
 /w7bridge.toml
 /.codebase-memory/
+/Cargo.lock
+tests/
