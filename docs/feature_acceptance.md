@@ -61,6 +61,25 @@
 - screenshot은 이전 visual E2E 증거다. 이번 변경은 command 출력 경로이며 새 screenshot이나 실제 PC reboot 검증으로 취급하지 않는다. Codex의 notification UI 표시와 설치된 permanent binary 교체도 이번 검증 범위에 포함하지 않는다.
 - 검증 종료 뒤 owned SCM service가 없는 상태(1060)를 확인하고 임시 native/fixture task를 삭제했다. permanent 설치와 project source/evidence는 보존했다.
 
+## 2026-10-01 Fatomic 파일 권한 활성화
+
+- 기존 `C:/w7bridge/w7bridge.toml`은 `projects = []`여서 Codex discovery에 보이는 Fatomic에도 file 권한이 없었다. 사용자가 지정한 `D:/Downloads/fatomic`만 기존 Codex ID `01a04c82-08c7-7ed3-addd-ff5358be7cf4`로 등록했다.
+- native 검증된 binary SHA-256 `f7892cfd55db0ccd4d6c4d85db886627b844136786467c83442fc7e0812f40f4`를 `C:/w7bridge/w7bridge-f7892cfd.exe`에 배치하고 owner config `C:/w7bridge/fatomic.toml`을 만들었다. Mac MCP command도 이 binary/config로 변경했다. 기존 executable과 활성 세션은 종료하지 않았으며 이전 config backup을 보존했다.
+- owner file 설정은 `enabled=true`, `max_file_bytes=67108864`, `exclude_dirs=["work", ".serena/cache"]`다. trace/archive와 cache는 scan에서 제외하며 원본은 삭제하지 않는다. 큰 source asset의 목록에는 `list_files`의 `protocol_version=2`를 사용한다. legacy version 1은 1 MiB를 넘는 파일을 거부한다.
+- 설치된 executable을 통한 실제 SSH/MCP에서 8728개 목록, `package.json` 읽기, 신규 probe의 write/read와 expected-hash 삭제가 통과했다. [검증 결과](evidence/2026-10-01/fatomic-file-access-result.json)를 보존한다. 이 검증은 파일 접근이며 Fatomic build/test 또는 sync pairing 검증은 아니다.
+- 현재 Codex chat의 기존 MCP transport는 closed 상태였다. UI 제어 도구가 Codex 접근을 차단했으므로 client의 reload/reconnect는 완료하지 못했다. 새 MCP 연결에는 변경된 Mac 설정이 적용된다.
+
+## 2026-10-01 Fatomic branch와 permanent hub
+
+- 최신 source `22ac45684dd9cb1e0ed0329102c54d2947686ed7c732bfe5049fc609c2cc65fa`의 macOS와 Windows-native formatter/check/Clippy/workspace test/build가 모두 exit 0이다. library test는 Mac 74개, Windows 75개이며 integration/xtask 결과와 ignored test는 전체 log에서 별도로 확인한다. [검증 기록](evidence/2026-10-01/fatomic-workflow/README.md)에 source manifest와 설치 binary hash를 연결한다.
+- Mac 원본 `Documents/ChatGPT/fatomic`의 `codex/cross-machine-dev`를 독립 Windows mirror `D:/w7bridge/projects/fatomic-mac`에 인계했다. 원래 Windows `D:/Downloads/fatomic`의 `codex/bladeball`과 shared-worktree metadata는 보존한다. 별도 Mac `fatomic-mac` checkout은 건드리지 않는다.
+- `.git`을 파일 공유하지 않고 검토한 initial state, Git bundle/index object, pair baseline과 CAS/WAL로 branch/history/staging을 인계한다. 기존 object는 incremental archive에서 제외하고 owner가 승인한 제외 tracked path는 index만 유지한다. approved source directory 예외도 secret, dependency와 custom ignore를 우회하지 않는다.
+- permanent project ID는 `desktop-8ueaoeb__fatomic`, command는 `check/build/test/run`이다. 로그인 SID를 확인하는 console 없는 desktop host와 owner-only named pipe를 사용한다. 기존 direct-SSH Codex transport는 reload/reconnect가 필요하다. Mac config의 tool timeout은 600초이며 process 시작 후 output yield와 별도다.
+- 실제 host를 중지한 동안 Mac 파일을 수정하고 같은 watcher가 다시 연결한 뒤 Windows hash가 일치했다. PC reboot 시험은 아니다. SSH reconnect의 handle을 보존하지만 host restart 뒤 process store 복원은 지원하지 않는다.
+- Fatomic command는 owner의 120초 fresh-sync gate와 immutable source snapshot을 사용한다. shared read lock으로 watcher와 snapshot 읽기를 함께 허용하고 file write는 exclusive lock으로 막는다. 기존 foreground command를 자동 재실행하지 않는다.
+- 최신 source의 작은 fixture E2E에서 Mac `mac-edit-v3`가 sync되고 Windows check/build/test가 모두 exit 0과 같은 verified revision을 반환했다. 실제 HTTP body와 MCP screenshot의 v3를 확인했다. realtime 첫 handle은 752.61 ms이며 양 stream은 완료 1993.58 ms 전에 도착했다. 병렬 progress token 분리와 running command의 reconnect/cursor resume도 통과했다. Fatomic 앱 검증과는 구분한다.
+- Fatomic 저장 정책은 각 관련 volume의 30 GiB floor + 10 GiB headroom이다. C의 공간과 mirror의 owner-local secret/frontend dependency 때문에 실제 Fatomic app build/화면 검증은 아직 완료하지 않았다. macOS background Documents 허가는 별도로 필요하다.
+
 ## 남은 검증과 지원 경계
 
 - 실제 네트워크 단절/장시간 offline/reboot, service crash 뒤 recovery, bandwidth의 실측 전송량과 signed HTTPS release update는 live 검증되지 않았다. 해당 안전성은 chunk/journal/history/updater 자동 test와 구분한다.

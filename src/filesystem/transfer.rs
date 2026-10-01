@@ -34,7 +34,7 @@ impl FileStore {
     /** 공유 파일을 정렬된 목록으로 읽는다. 10000개, 합계 256 MiB를 넘으면 부분 목록 대신 실패한다. */
     pub fn list(&self) -> Result<Vec<FileEntry>, FileError> {
 
-        let _lock = self.lock("access.lock")?;
+        let _lock = self.read_lock()?;
         let mut scan = Scan::default();
         self.walk(&self.root, &mut scan, 0)?;
         let mut entries = scan.entries;
@@ -107,7 +107,7 @@ impl FileStore {
     /** 설정된 파일 한도까지 읽는다. symlink, special file과 제외 경로는 거부한다. */
     pub fn read(&self, path: &str) -> Result<Vec<u8>, FileError> {
 
-        let _lock = self.lock("access.lock")?;
+        let _lock = self.read_lock()?;
         self.read_unlocked(path)
 
     }

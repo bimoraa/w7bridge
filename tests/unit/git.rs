@@ -81,6 +81,241 @@ fn copy_worktree( source: &Repository, destination: &Repository, ) {
 
 }
 
+async fn incremental_handoff( source: &Repository, destination: &Repository, ) -> Result<(Value,Value),String> {
+
+    let token = CancellationToken::new();
+    let old = destination.status(token.clone()).await?;
+    let state = source.status(token.clone()).await?;
+    let heads: Vec<String> = old["state"]["head"].as_str().into_iter().map(str::to_owned).collect();
+    let index: Vec<String> = old["state"]["index"]
+        .as_array()
+        .into_iter()
+        .flat_map(|entries| entries.iter())
+        .filter_map(|entry| entry["oid"].as_str().map(str::to_owned))
+        .collect();
+    let description =
+        source.export_incremental(state["state_hash"].as_str().unwrap(), &heads, &index, token.clone()).await?;
+    let prepared = destination.prepare_import(
+        description["sha256"].as_str().unwrap(),
+        description["bytes"].as_u64().unwrap() as usize,
+        old["state_hash"].as_str().map(str::to_owned),
+        destination.manifest()?,
+    )?;
+    for value in prepared["missing"].as_array().unwrap() {
+
+        let index = value.as_u64().unwrap() as usize;
+        let chunk = source.read_export(description["sha256"].as_str().unwrap(), index)?;
+        destination.put_import(
+            prepared["transfer_id"].as_str().unwrap(),
+            index,
+            &STANDARD.decode(chunk["content_base64"].as_str().unwrap()).unwrap(),
+            chunk["sha256"].as_str().unwrap(),
+        )?;
+
+    }
+    Ok((description, destination.apply_import(prepared["transfer_id"].as_str().unwrap(), token).await?))
+
+}
+
+#[tokio::test]
+async fn incremental_branch_and_commit_handoff_reuses_history_and_preserves_local_index_flags( ) {
+
+    let root = tempdir().unwrap();
+    let peer = tempdir().unwrap();
+    let source = repository(root.path());
+    let destination = repository(peer.path());
+    git(root.path(), &["init", "--quiet", "-b", "main"]);
+    fs::write(root.path().join("source.rs"), "initial").unwrap();
+    git(root.path(), &["add", "source.rs"]);
+    git(root.path(), &["commit", "--quiet", "-m", "fixture"]);
+    copy_worktree(&source, &destination);
+    handoff(&source, &destination, None).await.unwrap();
+    git(peer.path(), &["update-index", "--skip-worktree", "source.rs"]);
+    git(peer.path(), &["update-index", "--assume-unchanged", "source.rs"]);
+    git(root.path(), &["switch", "-c", "codex/mac"]);
+    let (description, result) = incremental_handoff(&source, &destination).await.unwrap();
+    assert!(description["bytes"].as_u64().unwrap() < 4096);
+    let archive: Archive = serde_json::from_slice(
+        &source
+            .files
+            .load_metadata(&format!("git-export-{}.bin", description["sha256"].as_str().unwrap()))
+            .unwrap()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(archive.bundle_base64.is_none());
+    assert!(archive.index_pack_base64.is_none());
+    assert!(result["backup"].is_string());
+    assert_eq!(git(peer.path(), &["branch", "--show-current"]), b"codex/mac\n");
+    assert_eq!(git(peer.path(), &["ls-files", "-v"]), b"s source.rs\n");
+    fs::write(root.path().join("new.rs"), "new commit").unwrap();
+    git(root.path(), &["add", "new.rs"]);
+    git(root.path(), &["commit", "--quiet", "-m", "second"]);
+    fs::write(root.path().join("staged.rs"), "staged only").unwrap();
+    git(root.path(), &["add", "staged.rs"]);
+    copy_worktree(&source, &destination);
+    incremental_handoff(&source, &destination).await.unwrap();
+    assert_eq!(git(peer.path(), &["rev-parse", "HEAD"]), git(root.path(), &["rev-parse", "HEAD"]));
+    assert_eq!(git(peer.path(), &["show", ":staged.rs"]), b"staged only");
+    assert_eq!(git(peer.path(), &["ls-files", "-v", "source.rs"]), b"s source.rs\n");
+    let object = text(git(root.path(), &["hash-object", "-w", "--stdin"])).unwrap();
+    git(root.path(), &["update-ref", "refs/snapshots/blob", &object]);
+    incremental_handoff(&source, &destination).await.unwrap();
+    assert_eq!(git(peer.path(), &["cat-file", "-t", "refs/snapshots/blob"]), b"blob\n");
+    let description = source
+        .export(
+            source.status(CancellationToken::new()).await.unwrap()["state_hash"].as_str().unwrap(),
+            CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+    let path = source
+        .files
+        .metadata_dir()
+        .unwrap()
+        .join(format!("git-export-{}.bin", description["sha256"].as_str().unwrap()));
+    let mut bytes = fs::read(&path).unwrap();
+    bytes[0] ^= 1;
+    fs::write(path, bytes).unwrap();
+    assert!(source.read_export(description["sha256"].as_str().unwrap(), 0).is_err());
+
+}
+
+#[tokio::test]
+async fn explicit_local_only_index_paths_preserve_working_files_and_reject_secrets( ) {
+
+    let root = tempdir().unwrap();
+    let peer = tempdir().unwrap();
+    let source = repository(root.path());
+    let destination = repository(peer.path());
+    git(root.path(), &["init", "--quiet", "-b", "main"]);
+    fs::create_dir(root.path().join("build")).unwrap();
+    fs::write(root.path().join("build/output.txt"), "old tracked artifact").unwrap();
+    git(root.path(), &["add", "build/output.txt"]);
+    git(root.path(), &["commit", "--quiet", "-m", "fixture"]);
+    assert!(source.status(CancellationToken::new()).await.is_err());
+    assert!(source.clone().with_local_only_paths(vec![".env".into()]).is_err());
+    assert!(source.clone().with_local_only_paths(vec![".git/config".into()]).is_err());
+    assert!(source.clone().with_local_only_paths(vec!["../escape".into()]).is_err());
+    assert!(source.clone().with_local_only_paths(vec!["source.rs".into()]).is_err());
+    let source = source.with_local_only_paths(vec!["build/output.txt".into()]).unwrap();
+    let destination = destination.with_local_only_paths(vec!["build/output.txt".into()]).unwrap();
+    fs::create_dir(peer.path().join("build")).unwrap();
+    fs::write(peer.path().join("build/output.txt"), "keep Windows artifact").unwrap();
+    handoff(&source, &destination, None).await.unwrap();
+    assert_eq!(git(peer.path(), &["show", ":build/output.txt"]), b"old tracked artifact");
+    assert_eq!(fs::read(peer.path().join("build/output.txt")).unwrap(), b"keep Windows artifact");
+    assert!(destination.files.list().unwrap().is_empty());
+
+}
+
+#[tokio::test]
+async fn git_handoff_never_replaces_metadata_shared_with_another_worktree( ) {
+
+    let root = tempdir().unwrap();
+    let peer = tempdir().unwrap();
+    let extra = tempdir().unwrap();
+    let source = repository(root.path());
+    let destination = repository(peer.path());
+    git(root.path(), &["init", "--quiet", "-b", "main"]);
+    fs::write(root.path().join("source.rs"), "initial").unwrap();
+    git(root.path(), &["add", "source.rs"]);
+    git(root.path(), &["commit", "--quiet", "-m", "fixture"]);
+    copy_worktree(&source, &destination);
+    handoff(&source, &destination, None).await.unwrap();
+    let path = git_path(&extra.path().join("linked")).unwrap();
+    git(peer.path(), &["worktree", "add", "--quiet", "--detach", &path]);
+    let before = git(peer.path(), &["rev-parse", "HEAD"]);
+    let expected =
+        destination.status(CancellationToken::new()).await.unwrap()["state_hash"].as_str().unwrap().to_owned();
+    git(root.path(), &["switch", "-c", "codex/mac"]);
+    let error = handoff(&source, &destination, Some(expected)).await.unwrap_err();
+    assert!(error.contains("worktree"), "{error}");
+    assert_eq!(git(peer.path(), &["rev-parse", "HEAD"]), before);
+    assert_eq!(git(peer.path(), &["branch", "--show-current"]), b"main\n");
+    assert_eq!(git(extra.path().join("linked").as_path(), &["rev-parse", "HEAD"]), before);
+
+}
+
+#[tokio::test]
+async fn git_exports_are_peer_independent_and_missing_known_objects_never_apply( ) {
+
+    let root = tempdir().unwrap();
+    let peer = tempdir().unwrap();
+    let source = repository(root.path());
+    let destination = repository(peer.path());
+    git(root.path(), &["init", "--quiet", "-b", "main"]);
+    fs::write(root.path().join("source.rs"), "initial").unwrap();
+    git(root.path(), &["add", "source.rs"]);
+    git(root.path(), &["commit", "--quiet", "-m", "fixture"]);
+    copy_worktree(&source, &destination);
+    handoff(&source, &destination, None).await.unwrap();
+    let token = CancellationToken::new();
+    let old = destination.status(token.clone()).await.unwrap();
+    fs::write(root.path().join("staged.rs"), "new blob").unwrap();
+    git(root.path(), &["add", "staged.rs"]);
+    copy_worktree(&source, &destination);
+    let state = source.status(token.clone()).await.unwrap();
+    let expected = state["state_hash"].as_str().unwrap();
+    let full = source.export(expected, token.clone()).await.unwrap();
+    let heads = vec![old["state"]["head"].as_str().unwrap().to_owned()];
+    let false_inventory = state["state"]["index"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|entry| entry["oid"].as_str().unwrap().to_owned())
+        .collect::<Vec<_>>();
+    let incomplete = source.export_incremental(expected, &heads, &false_inventory, token.clone()).await.unwrap();
+    assert_ne!(full["sha256"], incomplete["sha256"]);
+    assert!(source.read_export(full["sha256"].as_str().unwrap(), 0).is_ok());
+    let sha = incomplete["sha256"].as_str().unwrap();
+    let prepared = destination
+        .prepare_import(
+            sha,
+            incomplete["bytes"].as_u64().unwrap() as usize,
+            old["state_hash"].as_str().map(str::to_owned),
+            destination.manifest().unwrap(),
+        )
+        .unwrap();
+    for value in prepared["missing"].as_array().unwrap() {
+
+        let index = value.as_u64().unwrap() as usize;
+        let chunk = source.read_export(sha, index).unwrap();
+        destination
+            .put_import(
+                prepared["transfer_id"].as_str().unwrap(),
+                index,
+                &STANDARD.decode(chunk["content_base64"].as_str().unwrap()).unwrap(),
+                chunk["sha256"].as_str().unwrap(),
+            )
+            .unwrap();
+
+    }
+    assert!(destination.apply_import(prepared["transfer_id"].as_str().unwrap(), token.clone()).await.is_err());
+    assert_eq!(destination.status(token.clone()).await.unwrap()["state_hash"], old["state_hash"]);
+    for i in 0..5 {
+
+        git(root.path(), &["branch", &format!("cache-{i}")]);
+        let state = source.status(token.clone()).await.unwrap();
+        source
+            .export_incremental(state["state_hash"].as_str().unwrap(), &heads, &false_inventory, token.clone())
+            .await
+            .unwrap();
+
+    }
+    let count = fs::read_dir(source.files.metadata_dir().unwrap())
+        .unwrap()
+        .filter(|entry| {
+
+            entry.as_ref().unwrap().file_name().to_string_lossy().starts_with("git-export-")
+                && entry.as_ref().unwrap().file_name().to_string_lossy().ends_with(".bin")
+
+        })
+        .count();
+    assert_eq!(count, 4);
+
+}
+
 #[tokio::test]
 async fn bundle_index_and_worktree_handoff_both_directions_preserve_new_destination_changes( ) {
 

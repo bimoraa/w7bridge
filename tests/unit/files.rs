@@ -8,6 +8,33 @@ fn store(root: &Path) -> FileStore {
 }
 
 #[test]
+fn concurrent_readers_and_build_snapshot_share_access_but_writes_stay_exclusive( ) {
+
+    let root = tempdir().unwrap();
+    let files = store(root.path());
+    let expected = files.write("input.rs", Some(b"source"), None).unwrap().unwrap();
+    let key = files.root_key().unwrap();
+    let reading = files.read_lock().unwrap();
+    let other = files.clone();
+    std::thread::spawn(move || {
+
+        assert_eq!(other.read("input.rs").unwrap(), b"source");
+        assert_eq!(other.list().unwrap().len(), 1);
+        assert_eq!(other.root_key().unwrap(), key);
+        let (_directory, snapshot, _) = other.snapshot().unwrap();
+        assert_eq!(snapshot.read("input.rs").unwrap(), b"source");
+        assert!(matches!(other.write("input.rs", Some(b"changed"), Some(&expected)), Err(FileError::Busy)));
+
+    })
+    .join()
+    .unwrap();
+    drop(reading);
+    files.write("input.rs", Some(b"changed"), Some(&digest(b"source"))).unwrap();
+    assert_eq!(files.read("input.rs").unwrap(), b"changed");
+
+}
+
+#[test]
 fn context_is_shared_even_when_gitignored_and_artifacts_are_filtered() {
 
     let root = tempdir().unwrap();
@@ -62,6 +89,62 @@ fn conditional_writes_preserve_newer_content_and_deletions_require_the_version()
     assert!(matches!(limited.write("large.txt", Some(&vec![0; 1_048_577]), None), Err(FileError::Limit)));
     let _lock = files.lock("access.lock").unwrap();
     assert!(matches!(files.list(), Err(FileError::Busy)));
+
+}
+
+#[test]
+fn approved_source_build_directory_uses_one_policy_without_opening_secrets_or_artifacts( ) {
+
+    let root = tempdir().unwrap();
+    let default = store(root.path());
+    assert!(!default.permits("apps/desktop/build/resources.rs"));
+    let settings = FileSettings { enabled: true, source_dirs: vec!["apps/desktop/build".into()], ..Default::default() };
+    let files = default.with_settings(settings.clone()).unwrap();
+    let hash = files.write("apps/desktop/build/resources.rs", Some(b"source"), None).unwrap().unwrap();
+    assert_eq!(files.read("apps/desktop/build/resources.rs").unwrap(), b"source");
+    assert_eq!(files.list().unwrap()[0].path, "apps/desktop/build/resources.rs");
+    for path in [
+        "apps/desktop/build/.git/config",
+        "apps/desktop/build/target/input.rs",
+        "apps/desktop/build/node_modules/a.js",
+        "apps/desktop/build/.env",
+        "apps/desktop/build/tool.exe",
+        "apps/frontend/build/input.js",
+        "other/build/input.rs",
+    ] {
+
+        assert!(!files.permits(path), "{path}");
+        assert!(matches!(files.write(path, Some(b"blocked"), None), Err(FileError::Path)));
+
+    }
+    assert!(files.permits("apps/desktop/build/.env.example"));
+    assert!(files.permits("APPS/DESKTOP/BUILD/resources.rs"));
+    files.write("apps/desktop/build/resources.rs", None, Some(&hash)).unwrap();
+    assert!(files.list().unwrap().is_empty());
+    for directory in [".git", "target/build", "build/.git", "build/.env", "src", "../build", "build/subdir"] {
+
+        assert!(
+            FileSettings { source_dirs: vec![directory.into()], ..Default::default() }.validate().is_err(),
+            "{directory}"
+        );
+
+    }
+    let excluded = FileSettings { exclude_dirs: vec!["apps".into()], ..settings.clone() };
+    assert!(excluded.validate().is_err());
+    let reloaded: FileSettings = serde_json::from_value(serde_json::to_value(settings).unwrap()).unwrap();
+    assert_eq!(reloaded.source_dirs, ["apps/desktop/build"]);
+    assert!(serde_json::to_value(FileSettings::default()).unwrap().get("source_dirs").is_none());
+    let fixture_root = tempdir().unwrap();
+    let fixtures = FileStore::new(
+        fixture_root.path(),
+        FileSettings { enabled: true, source_dirs: vec!["tests/engine/target".into()], ..Default::default() },
+    )
+    .unwrap();
+    fixtures.write("tests/engine/target/fixture.rs", Some(b"fixture"), None).unwrap();
+    assert_eq!(fixtures.list().unwrap()[0].path, "tests/engine/target/fixture.rs");
+    assert!(!fixtures.permits("target/fixture.rs"));
+    assert!(!fixtures.permits("tests/engine/target/target/compiled.txt"));
+    assert!(!fixtures.permits("tests/engine/target/.git/config"));
 
 }
 

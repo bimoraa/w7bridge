@@ -393,7 +393,8 @@ pub(crate) mod coordination {
             if policy.requires_sync(project).map_err(|error| error.to_string())? {
 
                 let files = policy.files(project).map_err(|error| error.to_string())?;
-                let confirmed = self.wait_peer(project, &files, 30, cancellation, peer).await?;
+                let seconds = policy.sync_timeout(project).map_err(|error| error.to_string())?;
+                let confirmed = self.wait_peer(project, &files, seconds, cancellation, peer).await?;
                 return confirmed["manifest_hash"]
                     .as_str()
                     .map(|hash| Some(hash.to_owned()))

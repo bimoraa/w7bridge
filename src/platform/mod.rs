@@ -5,6 +5,8 @@ use process_wrap::tokio::{CommandWrap, KillOnDrop};
 pub(crate) mod macos;
 #[cfg(windows)]
 mod windows;
+#[cfg(windows)]
+pub(crate) use windows::identity::desktop_owner;
 pub(crate) fn configure(command: &mut CommandWrap) {
 
     command.wrap(KillOnDrop);

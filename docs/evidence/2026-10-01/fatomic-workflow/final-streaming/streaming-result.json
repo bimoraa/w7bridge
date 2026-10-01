@@ -1,0 +1,74 @@
+{
+  "default": {
+    "process_id": "1790806510889367900-5",
+    "first_response_ms": 752.6125000003958,
+    "completion_ms": 3344.1644159975112,
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-b6zzHS",
+      "exit_code": 0,
+      "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-b6zzHS)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.47s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+      "stderr_truncated": false,
+      "stdout": "STDOUT_1STDOUT_2",
+      "stdout_truncated": false,
+      "success": true
+    }
+  },
+  "notification_routes": {
+    "native-stream": {
+      "count": 6,
+      "process_id": "1790806515038431600-6",
+      "exit_code": 0
+    },
+    "parallel-build": {
+      "count": 6,
+      "process_id": "1790806515041134000-7",
+      "exit_code": 0
+    }
+  },
+  "stdout_before_completion_ms": 1993.5814999989816,
+  "stderr_before_completion_ms": 1993.5814999989816,
+  "stream_result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-ZJmDoc",
+    "events": [],
+    "exit_code": 0,
+    "next_cursor": 12,
+    "process_id": "1790806515038431600-6",
+    "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-ZJmDoc)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.47s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+    "stderr_truncated": false,
+    "stdout": "STDOUT_1STDOUT_2",
+    "stdout_truncated": false,
+    "success": true,
+    "truncated": false
+  },
+  "parallel_result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7StgRe",
+    "events": [],
+    "exit_code": 0,
+    "next_cursor": 6,
+    "process_id": "1790806515041134000-7",
+    "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7StgRe)\nwarning: constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\nwarning: `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.38s\n",
+    "stderr_truncated": false,
+    "stdout": "",
+    "stdout_truncated": false,
+    "success": true,
+    "truncated": false
+  }
+}

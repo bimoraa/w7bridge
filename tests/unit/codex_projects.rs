@@ -125,6 +125,7 @@ async fn listing_merges_explicit_permissions_without_granting_discovered_project
         root: root.path().to_owned(),
         files: Default::default(),
         requires_sync: false,
+        sync_timeout_seconds: 30,
         presets: None,
         git: None,
         commands: BTreeMap::new(),

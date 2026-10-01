@@ -9,6 +9,7 @@ impl FileStore {
 
     pub(crate) fn snapshot( &self, ) -> Result<(TempDir, FileStore, String), FileError> {
 
+        let _source = self.read_lock()?;
         let entries = self.list()?;
         let revision = digest(&serde_json::to_vec(&hashes(&entries)).map_err(|_| FileError::Data)?);
         let directory = tempfile::Builder::new().prefix("build-").tempdir_in(self.metadata_dir()?)?;

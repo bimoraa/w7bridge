@@ -1,0 +1,25 @@
+{
+    "desktop_sha256":  "2dfb0e1195d502477ecf86601eff20017f084a3fc5db5806481b8d23f9f61f51",
+    "disks":  [
+                  {
+                      "DriveLetter":  "D",
+                      "SizeRemaining":  180776198144
+                  },
+                  {
+                      "DriveLetter":  "C",
+                      "SizeRemaining":  17899782144
+                  }
+              ],
+    "cli_sha256":  "cf62b6af99da4dac8e13c13d8b930bc866cb1d98eaa2c874c81405c39e35696f",
+    "mirror_branch":  "codex/cross-machine-dev",
+    "host":  [
+                 {
+                     "ProcessId":  80692,
+                     "SessionId":  1,
+                     "CommandLine":  "\"D:/w7bridge/fatomic-2158/w7bridge-desktop.exe\" --config D:/w7bridge/fatomic-2158/owner.toml"
+                 }
+             ],
+    "primary_branch":  "codex/bladeball",
+    "probe_absent":  true,
+    "task_state":  "Running"
+}

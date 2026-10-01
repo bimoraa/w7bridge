@@ -2,4 +2,4 @@
 
 mod bootstrap;
 mod lifecycle;
-pub use bootstrap::run;
+pub use bootstrap::{run, run_desktop};

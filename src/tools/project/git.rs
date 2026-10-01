@@ -19,7 +19,16 @@ enum Arguments {
     #[serde(rename = "git_status")]
     Status { project_id: String },
     #[serde(rename = "git_export")]
-    Export { project_id: String, expected_state: String },
+    Export {
+
+        project_id: String,
+        expected_state: String,
+        #[serde(default)]
+        known_heads: Vec<String>,
+        #[serde(default)]
+        known_index: Vec<String>,
+
+    },
     #[serde(rename = "read_git_chunk")]
     Read { project_id: String, sha256: String, index: usize },
     #[serde(rename = "prepare_git_import")]
@@ -68,6 +77,12 @@ pub(crate) fn definitions( ) -> Vec<Tool> {
 
                 };
                 required.push(key);
+
+            }
+            if name == "git_export" {
+
+                properties["known_heads"] = json!({"type":"array","items":{"type":"string"},"maxItems":1025});
+                properties["known_index"] = json!({"type":"array","items":{"type":"string"},"maxItems":10000});
 
             }
             let schema =
@@ -127,7 +142,19 @@ pub(crate) async fn call( policy: &Policy, slots: Arc<Semaphore>, name: &str, mu
     let result = match args {
 
         Arguments::Status { .. } => repository.status(cancellation).await,
-        Arguments::Export { expected_state, .. } => repository.export(&expected_state, cancellation).await,
+        Arguments::Export { expected_state, known_heads, known_index, .. } => {
+
+            if known_heads.is_empty() && known_index.is_empty() {
+
+                repository.export(&expected_state, cancellation).await
+
+            } else {
+
+                repository.export_incremental(&expected_state, &known_heads, &known_index, cancellation).await
+
+            }
+
+        }
         Arguments::Read { sha256, index, .. } => repository.read_export(&sha256, index),
         Arguments::Prepare { sha256, bytes, expected_state, expected_manifest, .. } => {
 

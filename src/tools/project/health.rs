@@ -147,7 +147,7 @@ pub(crate) async fn call( bridge: &Bridge, name: &str, args: Map<String, Value>,
         .map_err(|_| ErrorData::internal_error("process 상태를 읽을 수 없습니다", None))?;
     let events = bridge
         .events
-        .read(&args.project_id, 0, 0, cancellation)
+        .read(&args.project_id, 0, 0, cancellation.clone())
         .await
         .map_err(|_| ErrorData::internal_error("event 상태를 읽을 수 없습니다", None))?;
     let last_error = events["events"]
@@ -173,11 +173,39 @@ pub(crate) async fn call( bridge: &Bridge, name: &str, args: Map<String, Value>,
         .find(|project| project["id"] == args.project_id)
         .map(|project| project["commands"].clone())
         .unwrap_or_else(|| json!([]));
+    let git = if bridge.policy.git_enabled(&args.project_id) {
+
+        match bridge.policy.git(&args.project_id) {
+
+            Ok(repository) => match tokio::time::timeout(
+                std::time::Duration::from_secs(2),
+                repository.status(cancellation.child_token()),
+            )
+            .await
+            {
+
+                Ok(Ok(value)) => json!({"enabled":true,"state_hash":value["state_hash"],
+                    "head":value["state"]["head"],"branch":value["state"]["branch"],
+                    "refs":value["state"]["refs"].as_object().map(|refs|refs.len()),
+                    "index_entries":value["state"]["index"].as_array().map(|index|index.len())}),
+                Ok(Err(error)) => json!({"enabled":true,"error":error}),
+                Err(_) => json!({"enabled":true,"error":"Git 상태 조회 제한 시간이 초과되었습니다"}),
+
+            },
+            Err(error) => json!({"enabled":true,"error":error}),
+
+        }
+
+    } else {
+
+        json!({"enabled":false})
+
+    };
     Ok(CallToolResult::structured(json!({"project_id":args.project_id,"device_id":bridge.device_id,"root":root,
         "commands":commands,"requires_sync":bridge.policy.requires_sync(&args.project_id).unwrap_or(false),
         "device_online":true,"peer_online":!matches!(sync["status"].as_str(),Some("offline"|"disabled"|"error")),
         "machine_os":std::env::consts::OS,"boot_id":bridge.events.boot_id,"sync":sync,"processes":processes["processes"],
-        "last_error":last_error.or_else(||sync.get("error").cloned()),"available_command_slots":bridge.executor.available_slots(),"queue_depth":0,
+        "git":git,"last_error":last_error.or_else(||sync.get("error").cloned()).or_else(||git.get("error").cloned()),"available_command_slots":bridge.executor.available_slots(),"queue_depth":0,
         "diagnostic_duration_ms":started.elapsed().as_millis()})))
 
 }

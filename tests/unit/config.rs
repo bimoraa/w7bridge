@@ -24,7 +24,9 @@ fn invalid_versions_unknown_fields_and_unbounded_limits_are_rejected() {
         "version = 1\n[execution]\ntimeout_seconds = 0",
         "version = 1\n[execution]\noutput_bytes = 1048577",
         "version = 1\n[execution]\nconcurrency = 9",
+        "version = 1\n[service]\ndesktop = true",
         "version = 1\n[[projects]]\nid = 'sample'\nroot = '/tmp'\nunknown = 1",
+        "version = 1\n[[projects]]\nid = 'sample'\nroot = '/tmp'\nsync_timeout_seconds = 121",
         "version = 1\n[[projects]]\nid = 'sample'\nroot = '/tmp'\n[projects.commands.test]\nexecutable = '/tmp/tool'\nunknown = 1",
     ] {
 

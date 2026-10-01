@@ -32,6 +32,11 @@ impl Policy {
         for mut project in definitions {
 
             name(&project.id)?;
+            if !(1..=120).contains(&project.sync_timeout_seconds) {
+
+                return Err(PolicyError::Command);
+
+            }
             project.root = canonical(&project.root, true)?;
             project.files.validate().map_err(|_| PolicyError::Files)?;
             super::presets::apply(&mut project)?;
@@ -43,6 +48,12 @@ impl Policy {
 
                 }
                 git.executable = canonical(&git.executable, false)?;
+                crate::git::Repository::new(
+                    FileStore::new(&project.root, project.files.clone()).map_err(|_| PolicyError::Files)?,
+                    git.executable.clone(),
+                )
+                .with_local_only_paths(git.local_only_paths.clone())
+                .map_err(|_| PolicyError::Files)?;
 
             }
             if project.requires_sync && !project.files.enabled {
@@ -103,6 +114,12 @@ impl Policy {
 
     }
 
+    pub fn sync_timeout(&self, project_id: &str) -> Result<u64, PolicyError> {
+
+        Ok(self.projects.get(project_id).ok_or(PolicyError::Unknown)?.sync_timeout_seconds)
+
+    }
+
     pub fn root( &self, project_id: &str, ) -> Result<&Path, PolicyError> {
 
         Ok(&self.projects.get(project_id).ok_or(PolicyError::Unknown)?.root)
@@ -118,10 +135,17 @@ impl Policy {
             return Err("Git executable이 변경되었습니다".into());
 
         }
-        Ok(crate::git::Repository::new(
+        crate::git::Repository::new(
             self.files(project_id).map_err(|error| error.to_string())?,
             settings.executable.clone(),
-        ))
+        )
+        .with_local_only_paths(settings.local_only_paths.clone())
+
+    }
+
+    pub(crate) fn git_enabled( &self, project_id: &str, ) -> bool {
+
+        self.projects.get(project_id).is_some_and(|project| project.git.is_some())
 
     }
 

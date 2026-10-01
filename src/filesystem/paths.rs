@@ -13,6 +13,7 @@ impl FileSettings {
     pub fn validate(&self) -> Result<(), FileError> {
 
         if self.exclude_dirs.len() > 64
+            || self.source_dirs.len() > 64
             || self.context_files.len() > 64
             || !(1_048_576..=64 * 1024 * 1024).contains(&self.max_file_bytes)
         {
@@ -20,16 +21,30 @@ impl FileSettings {
             return Err(FileError::Limit);
 
         }
-        for path in self.exclude_dirs.iter().chain(&self.context_files) {
+        for path in self.exclude_dirs.iter().chain(&self.context_files).chain(&self.source_dirs) {
 
             relative(path)?;
+
+        }
+        for directory in &self.source_dirs {
+
+            if excluded(directory, std::slice::from_ref(directory))
+                || !directory.split('/').any(source_directory)
+                || self.exclude_dirs.iter().any(|excluded| under(directory, excluded))
+            {
+
+                return Err(FileError::Path);
+
+            }
 
         }
         for context in
             ["AGENTS.md", "MEMORY.md", "PLANS.md"].into_iter().chain(self.context_files.iter().map(String::as_str))
         {
 
-            if excluded_builtin(context) || self.exclude_dirs.iter().any(|directory| under(context, directory)) {
+            if excluded(context, &self.source_dirs)
+                || self.exclude_dirs.iter().any(|directory| under(context, directory))
+            {
 
                 return Err(FileError::Path);
 
@@ -88,7 +103,7 @@ impl FileStore {
     pub fn permits(&self, path: &str) -> bool {
 
         relative(path).is_ok()
-            && !excluded_builtin(path)
+            && !excluded(path, &self.settings.source_dirs)
             && !self.settings.exclude_dirs.iter().any(|directory| under(path, directory))
 
     }
@@ -255,19 +270,44 @@ fn under(path: &str, directory: &str) -> bool {
 
 }
 
-pub(crate) fn excluded_builtin(path: &str) -> bool {
+fn source_directory( part: &str, ) -> bool {
 
+    matches!(part.to_ascii_lowercase().as_str(), "build" | "dist" | "out" | "coverage" | "target")
+
+}
+
+pub(crate) fn excluded_builtin( path: &str, ) -> bool {
+
+    excluded(path, &[])
+
+}
+
+fn excluded( path: &str, source_dirs: &[String], ) -> bool {
+
+    let mut prefix = String::new();
     path.split('/').any(|part| {
+
+        if !prefix.is_empty() {
+
+            prefix.push('/');
+
+        }
+        prefix.push_str(part);
+        if source_directory(part) {
+
+            if part.eq_ignore_ascii_case("target") {
+
+                return !source_dirs.iter().any(|directory| prefix.eq_ignore_ascii_case(directory));
+
+            }
+            return !source_dirs.iter().any(|directory| under(&prefix, directory));
+
+        }
 
         matches!(
             part.to_ascii_lowercase().as_str(),
             ".git"
-                | "target"
                 | "node_modules"
-                | "dist"
-                | "build"
-                | "out"
-                | "coverage"
                 | ".cache"
                 | ".next"
                 | ".nuxt"

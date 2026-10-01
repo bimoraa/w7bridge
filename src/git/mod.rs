@@ -11,6 +11,7 @@ use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
+    io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
@@ -67,6 +68,7 @@ pub(crate) struct Repository {
 
     files: FileStore,
     executable: PathBuf,
+    local_only_paths: Vec<String>,
 
 }
 
@@ -74,7 +76,39 @@ impl Repository {
 
     pub fn new( files: FileStore, executable: PathBuf, ) -> Self {
 
-        Self { files, executable }
+        Self { files, executable, local_only_paths: Vec::new() }
+
+    }
+
+    /** owner가 명시한 제외된 tracked 경로의 index만 인계한다. working file 권한은 추가하지 않으며 secret 경로는 거부한다. */
+    pub fn with_local_only_paths( mut self, paths: Vec<String>, ) -> Result<Self,String> {
+
+        if paths.len() > 256 {
+
+            return Err("Git local-only path 한도를 초과했습니다".into());
+
+        }
+        validate_paths(paths.iter().map(String::as_str)).map_err(message)?;
+        for path in &paths {
+
+            if self.files.permits(path)
+                || path.split('/').any(|part| {
+
+                    let name = part.to_ascii_lowercase();
+                    matches!(name.as_str(), ".git" | ".w7bridge" | ".w7bridge-update")
+                        || name == ".env"
+                        || name.starts_with(".env.") && !matches!(name.as_str(), ".env.example" | ".env.sample")
+
+                })
+            {
+
+                return Err("Git local-only path는 secret이 아닌 제외된 tracked 경로만 허용합니다".into());
+
+            }
+
+        }
+        self.local_only_paths = paths;
+        Ok(self)
 
     }
 
@@ -285,7 +319,7 @@ impl Repository {
 
                 !matches!(entry.mode.as_str(), "100644" | "100755")
                     || !valid_oid(&entry.oid)
-                    || !self.files.permits(&entry.path)
+                    || !self.files.permits(&entry.path) && !self.local_only_paths.contains(&entry.path)
 
             })
             || state.origin.as_ref().is_some_and(|url| public_origin(url).as_ref() != Some(url))
@@ -306,11 +340,28 @@ impl Repository {
 
         let _lock = self.files.lock("git.lock").map_err(message)?;
         let state = self.state(cancellation).await?;
-        Ok(json!({"state_hash":state.as_ref().map(state_hash).transpose()?,"state":state,"recovery_pending":false}))
+        Ok(json!({"state_hash":state.as_ref().map(state_hash).transpose()?,"state":state,"recovery_pending":false,
+            "incremental_export":true,"local_only_paths":self.local_only_paths}))
 
     }
 
     pub async fn export( &self, expected: &str, cancellation: CancellationToken, ) -> Result<Value,String> {
+
+        self.export_incremental(expected, &[], &[], cancellation).await
+
+    }
+
+    /** peer의 object inventory를 제외해 archive를 만든다. inventory가 잘못됐으면 대상의 bundle/fsck 검증에서 apply를 거부한다. */
+    pub async fn export_incremental( &self, expected: &str, known_heads: &[String], known_index: &[String], cancellation: CancellationToken, ) -> Result<Value,String> {
+
+        if known_heads.len() > 1025
+            || known_index.len() > 10000
+            || known_heads.iter().chain(known_index).any(|oid| !valid_oid(oid))
+        {
+
+            return Err("Git object inventory 한도나 OID를 확인하세요".into());
+
+        }
 
         let _lock = self.files.lock("git.lock").map_err(message)?;
         let state = self.state(cancellation.clone()).await?.ok_or("Git repository가 없습니다")?;
@@ -325,38 +376,92 @@ impl Repository {
             .tempdir_in(self.files.metadata_dir().map_err(message)?)
             .map_err(message)?;
         let bundle = temporary.path().join("repository.bundle");
+        let mut revisions = vec!["--all".to_owned()];
+        if state.head.is_some() {
+
+            revisions.push("HEAD".into());
+
+        }
+        if !known_heads.is_empty() {
+
+            let input = known_heads.iter().map(|oid| format!("{oid}\n")).collect::<String>().into_bytes();
+            let objects = self
+                .command(
+                    &root,
+                    &["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+                    Some(input),
+                    cancellation.clone(),
+                )
+                .await?;
+            for line in text(objects)?.lines() {
+
+                if let Some(oid) = line.strip_suffix(" commit")
+                    && valid_oid(oid)
+                {
+
+                    revisions.push(format!("^{oid}"));
+
+                }
+
+            }
+
+        }
         let bundle_base64 = if state.head.is_some() || !state.refs.is_empty() {
 
             let bundle_path = git_path(&bundle)?;
-            self.command(&root, &["bundle", "create", &bundle_path, "--all", "HEAD"], None, cancellation.clone())
-                .await?;
-            let bytes = fs::read(bundle).map_err(message)?;
-            if bytes.len() > 48 * 1024 * 1024 {
+            let mut count_args = vec!["rev-list", "--count"];
+            count_args.extend(revisions.iter().map(String::as_str));
+            let count = text(self.command(&root, &count_args, None, cancellation.clone()).await?)?;
+            if count == "0" && !known_heads.is_empty() {
 
-                return Err("Git bundle 한도는 48 MiB입니다".into());
+                None
+
+            } else {
+
+                let mut args = vec!["bundle", "create", &bundle_path];
+                args.extend(revisions.iter().map(String::as_str));
+                self.command(&root, &args, None, cancellation.clone()).await?;
+                let bytes = fs::read(bundle).map_err(message)?;
+                if bytes.len() > 48 * 1024 * 1024 {
+
+                    return Err("Git bundle 한도는 48 MiB입니다".into());
+
+                }
+                Some(STANDARD.encode(bytes))
 
             }
-            Some(STANDARD.encode(bytes))
 
         } else {
 
             None
 
         };
-        let ids: BTreeSet<_> = state.index.iter().map(|entry| entry.oid.as_str()).collect();
-        let index_pack_base64 =
-            if ids.is_empty() {
+        let known: BTreeSet<_> = known_index.iter().map(String::as_str).collect();
+        let known_refs: BTreeSet<_> = known_heads.iter().map(String::as_str).collect();
+        let ids: BTreeSet<_> = state
+            .index
+            .iter()
+            .map(|entry| entry.oid.as_str())
+            .filter(|oid| !known.contains(oid))
+            .chain(state.refs.values().map(String::as_str).filter(|oid| !known_refs.contains(oid)))
+            .collect();
+        let index_pack_base64 = if ids.is_empty() {
 
-                None
+            None
 
-            } else {
+        } else {
 
-                let input = ids.into_iter().map(|id| format!("{id}\n")).collect::<String>().into_bytes();
-                Some(STANDARD.encode(
-                    self.command(&root, &["pack-objects", "--stdout"], Some(input), cancellation.clone()).await?,
-                ))
+            let input = ids
+                .into_iter()
+                .chain(revisions.iter().map(String::as_str).filter(|revision| revision.starts_with('^')))
+                .map(|id| format!("{id}\n"))
+                .collect::<String>()
+                .into_bytes();
+            Some(STANDARD.encode(
+                self.command(&root, &["pack-objects", "--stdout", "--revs"], Some(input), cancellation.clone()).await?,
+            ))
 
-            };
+        };
         if self.state(cancellation).await?.as_ref() != Some(&state) {
 
             return Err("Git export 중 상태가 변경되었습니다".into());
@@ -365,21 +470,116 @@ impl Repository {
         let payload =
             serde_json::to_vec(&Archive { version: 1, state, bundle_base64, index_pack_base64 }).map_err(message)?;
         let sha256 = digest(&payload);
-        self.files.save_metadata("git-export.bin", &payload).map_err(message)?;
-        Ok(json!({"sha256":sha256,"bytes":payload.len(),"chunks":crate::filesystem::chunks::describe(&payload)}))
+        self.files.save_metadata(&format!("git-export-{sha256}.bin"), &payload).map_err(message)?;
+        let description =
+            json!({"sha256":sha256,"bytes":payload.len(),"chunks":crate::filesystem::chunks::describe(&payload)});
+        self.files
+            .save_metadata(&format!("git-export-{sha256}.json"), &serde_json::to_vec(&description).map_err(message)?)
+            .map_err(message)?;
+        self.prune_exports(&sha256)?;
+        Ok(description)
 
     }
 
     pub fn read_export( &self, expected: &str, index: usize, ) -> Result<Value,String> {
 
-        let payload = self.files.load_metadata("git-export.bin").map_err(message)?.ok_or("Git export가 없습니다")?;
-        if digest(&payload) != expected {
+        if !valid_hash(expected) {
+
+            return Err("Git export hash가 잘못되었습니다".into());
+
+        }
+        let _lock = self.files.lock("git.lock").map_err(message)?;
+        let description: Value = serde_json::from_slice(
+            &self
+                .files
+                .load_metadata(&format!("git-export-{expected}.json"))
+                .map_err(message)?
+                .ok_or("Git export가 없습니다")?,
+        )
+        .map_err(message)?;
+        let length = description["bytes"]
+            .as_u64()
+            .filter(|bytes| *bytes > 0 && *bytes <= 64 * 1024 * 1024)
+            .ok_or("Git export 한도가 잘못되었습니다")?;
+        if description["sha256"].as_str() != Some(expected)
+            || !valid_hash(expected)
+            || index >= (length as usize).div_ceil(65536)
+        {
 
             return Err("Git export revision이 변경되었습니다".into());
 
         }
-        let bytes = payload.chunks(65536).nth(index).ok_or("Git chunk index가 잘못되었습니다")?;
-        Ok(json!({"content_base64":STANDARD.encode(bytes),"sha256":digest(bytes)}))
+        let path = self.files.metadata_dir().map_err(message)?.join(format!("git-export-{expected}.bin"));
+        let metadata = fs::symlink_metadata(&path).map_err(message)?;
+        if crate::filesystem::paths::redirected(&metadata) || !metadata.is_file() || metadata.len() != length {
+
+            return Err("Git export 파일이 변경되었습니다".into());
+
+        }
+        let mut file = fs::File::open(path).map_err(message)?;
+        file.seek(SeekFrom::Start(index as u64 * 65536)).map_err(message)?;
+        let mut bytes = vec![0; ((length as usize) - index * 65536).min(65536)];
+        file.read_exact(&mut bytes).map_err(message)?;
+        let hash = digest(&bytes);
+        if description["chunks"][index]["sha256"].as_str() != Some(&hash) {
+
+            return Err("Git export chunk가 손상되었습니다".into());
+
+        }
+        Ok(json!({"content_base64":STANDARD.encode(bytes),"sha256":hash}))
+
+    }
+
+    fn prune_exports( &self, current: &str, ) -> Result<(),String> {
+
+        let directory = self.files.metadata_dir().map_err(message)?;
+        let mut exports = Vec::new();
+        for entry in fs::read_dir(&directory).map_err(message)? {
+
+            let entry = entry.map_err(message)?;
+            let name = entry.file_name();
+            let Some(hash) = name
+                .to_str()
+                .and_then(|name| name.strip_prefix("git-export-"))
+                .and_then(|name| name.strip_suffix(".bin"))
+                .filter(|hash| valid_hash(hash))
+            else {
+
+                continue;
+
+            };
+            let metadata = fs::symlink_metadata(entry.path()).map_err(message)?;
+            if crate::filesystem::paths::redirected(&metadata) || !metadata.is_file() {
+
+                return Err("Git export cache 경로가 변경되었습니다".into());
+
+            }
+            exports.push((hash.to_owned(), metadata.modified().map_err(message)?));
+
+        }
+        exports.sort_by_key(|(_, modified)| *modified);
+        let remove = exports.len().saturating_sub(4);
+        for (hash, _) in exports.into_iter().filter(|(hash, _)| hash != current).take(remove) {
+
+            for suffix in ["bin", "json"] {
+
+                let path = directory.join(format!("git-export-{hash}.{suffix}"));
+                match fs::symlink_metadata(&path) {
+
+                    Ok(metadata) if !crate::filesystem::paths::redirected(&metadata) && metadata.is_file() => {
+
+                        fs::remove_file(path).map_err(message)?
+
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    _ => return Err("Git export cache 경로가 변경되었습니다".into()),
+
+                }
+
+            }
+
+        }
+        Ok(())
 
     }
 
@@ -504,10 +704,35 @@ impl Repository {
             return Err("기존 linked worktree metadata 교체는 지원하지 않습니다. 원본 worktree는 유지합니다".into());
 
         }
+        let worktrees = existing.join("worktrees");
+        if worktrees.exists() {
+
+            let metadata = fs::symlink_metadata(&worktrees).map_err(message)?;
+            if crate::filesystem::paths::redirected(&metadata)
+                || !metadata.is_dir()
+                || fs::read_dir(&worktrees).map_err(message)?.next().is_some()
+            {
+
+                return Err(
+                    "다른 worktree가 공유하는 Git metadata는 교체하지 않습니다. 독립 mirror를 사용하세요".into()
+                );
+
+            }
+
+        }
         let staging = tempfile::Builder::new()
             .prefix("git-stage-")
             .tempdir_in(self.files.metadata_dir().map_err(message)?)
             .map_err(message)?;
+        let local_flags = if old.is_some() {
+
+            self.command(&root, &["ls-files", "-v", "-z"], None, cancellation.clone()).await?
+
+        } else {
+
+            Vec::new()
+
+        };
         if existing.exists() {
 
             copy_metadata(&existing, &staging.path().join(".git"), &mut 0)?;
@@ -530,6 +755,26 @@ impl Repository {
 
             let bytes = STANDARD.decode(encoded).map_err(message)?;
             self.command(staging.path(), &["index-pack", "--stdin"], Some(bytes), cancellation.clone()).await?;
+
+        }
+        if !archive.state.index.is_empty() {
+
+            let objects: BTreeSet<_> = archive.state.index.iter().map(|entry| entry.oid.as_str()).collect();
+            let input = objects.iter().map(|oid| format!("{oid}\n")).collect::<String>().into_bytes();
+            let checked = self
+                .command(
+                    staging.path(),
+                    &["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+                    Some(input),
+                    cancellation.clone(),
+                )
+                .await?;
+            let checked = text(checked)?;
+            if checked.lines().count() != objects.len() || checked.lines().any(|line| !line.ends_with(" blob")) {
+
+                return Err("대상 Git index object가 없거나 blob이 아닙니다. 기존 metadata를 보존합니다".into());
+
+            }
 
         }
         let mut update = String::from("start\n");
@@ -572,6 +817,36 @@ impl Repository {
                 .into_bytes();
             self.command(staging.path(), &["update-index", "-z", "--index-info"], Some(index), cancellation.clone())
                 .await?;
+
+        }
+        // skip-worktree와 assume-unchanged는 기기별 설정으로 유지해.
+        for (option, skip) in [("--skip-worktree", true), ("--assume-unchanged", false)] {
+
+            let mut paths = Vec::new();
+            for entry in local_flags.split(|byte| *byte == 0).filter(|entry| entry.len() > 2) {
+
+                let flag = entry[0];
+                let path = std::str::from_utf8(&entry[2..]).map_err(message)?;
+                let selected = if skip { flag.eq_ignore_ascii_case(&b'S') } else { flag.is_ascii_lowercase() };
+                if selected && archive.state.index.iter().any(|entry| entry.path == path) {
+
+                    paths.extend(path.as_bytes());
+                    paths.push(0);
+
+                }
+
+            }
+            if !paths.is_empty() {
+
+                self.command(
+                    staging.path(),
+                    &["update-index", option, "-z", "--stdin"],
+                    Some(paths),
+                    cancellation.clone(),
+                )
+                .await?;
+
+            }
 
         }
         if let Some(origin) = &archive.state.origin {

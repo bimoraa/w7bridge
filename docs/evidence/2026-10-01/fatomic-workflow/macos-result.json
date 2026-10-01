@@ -1,0 +1,54 @@
+[
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "-p",
+      "xtask",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "--workspace",
+      "--all-targets"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--locked",
+      "--workspace",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--locked",
+      "--workspace"
+    ],
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "cargo",
+      "build",
+      "--locked"
+    ],
+    "exit_code": 0
+  }
+]

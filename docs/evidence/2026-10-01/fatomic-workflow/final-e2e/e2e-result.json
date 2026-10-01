@@ -1,0 +1,521 @@
+{
+  "check": {
+    "process_id": "1790806468337521600-1",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7K0qMu",
+      "exit_code": 0,
+      "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "    Checking w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7K0qMu)\nwarning: constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\nwarning: `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.19s\n",
+      "stderr_truncated": false,
+      "stdout": "",
+      "stdout_truncated": false,
+      "success": true
+    },
+    "events": [
+      {
+        "content_base64": "ICAgIENoZWNraW5n",
+        "cursor": 1,
+        "stream": "stderr",
+        "text": "    Checking"
+      },
+      {
+        "content_base64": "IHc3YnJpZGdlX2UyZV9maXh0dXJlIHYwLjEuMCAoRDpcdzdicmlkZ2VcZmF0b21pYy0yMTU4XGZpeHR1cmVcLnc3YnJpZGdlXGJ1aWxkLTdLMHFNdSkK",
+        "cursor": 2,
+        "stream": "stderr",
+        "text": " w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7K0qMu)\n"
+      },
+      {
+        "content_base64": "d2FybmluZw==",
+        "cursor": 3,
+        "stream": "stderr",
+        "text": "warning"
+      },
+      {
+        "content_base64": "OiBjb25zdGFudCBgcmV2aXNpb25gIHNob3VsZCBoYXZlIGFuIHVwcGVyIGNhc2UgbmFtZQogLS0+IHNyY1xtYWluLnJzOjI6NwogIHwKMiB8IGNvbnN0IHJldmlzaW9uOiAmc3RyID0gaW5jbHVkZV9zdHIhKCIuLi9yZXZpc2lvbi50eHQiKTsKICB8ICAgICAgIF5eXl5eXl5eCiAgfAogID0gbm90ZTogYCNbd2Fybihub25fdXBwZXJfY2FzZV9nbG9iYWxzKV1gIChwYXJ0IG9mIGAjW3dhcm4obm9uc3RhbmRhcmRfc3R5bGUpXWApIG9uIGJ5IGRlZmF1bHQKaGVscDogY29udmVydCB0aGUgaWRlbnRpZmllciB0byB1cHBlciBjYXNlCiAgfAoyIC0gY29uc3QgcmV2aXNpb246ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwoyICsgY29uc3QgUkVWSVNJT046ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwogIHwKCg==",
+        "cursor": 4,
+        "stream": "stderr",
+        "text": ": constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\n"
+      },
+      {
+        "content_base64": "d2FybmluZw==",
+        "cursor": 5,
+        "stream": "stderr",
+        "text": "warning"
+      },
+      {
+        "content_base64": "OiBgdzdicmlkZ2VfZTJlX2ZpeHR1cmVgIChiaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIikgZ2VuZXJhdGVkIDEgd2FybmluZyAocnVuIGBjYXJnbyBmaXggLS1iaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIiAtcCB3N2JyaWRnZV9lMmVfZml4dHVyZWAgdG8gYXBwbHkgMSBzdWdnZXN0aW9uKQogICAgRmluaXNoZWQgYGRldmAgcHJvZmlsZSBbdW5vcHRpbWl6ZWQgKyBkZWJ1Z2luZm9dIHRhcmdldChzKSBpbiAwLjE5cwo=",
+        "cursor": 6,
+        "stream": "stderr",
+        "text": ": `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.19s\n"
+      }
+    ]
+  },
+  "build": {
+    "process_id": "1790806470359207300-2",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-jbhv75",
+      "exit_code": 0,
+      "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-jbhv75)\nwarning: constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\nwarning: `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.48s\n",
+      "stderr_truncated": false,
+      "stdout": "",
+      "stdout_truncated": false,
+      "success": true
+    },
+    "events": [
+      {
+        "content_base64": "ICAgQ29tcGlsaW5n",
+        "cursor": 1,
+        "stream": "stderr",
+        "text": "   Compiling"
+      },
+      {
+        "content_base64": "IHc3YnJpZGdlX2UyZV9maXh0dXJlIHYwLjEuMCAoRDpcdzdicmlkZ2VcZmF0b21pYy0yMTU4XGZpeHR1cmVcLnc3YnJpZGdlXGJ1aWxkLWpiaHY3NSkK",
+        "cursor": 2,
+        "stream": "stderr",
+        "text": " w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-jbhv75)\n"
+      },
+      {
+        "content_base64": "d2FybmluZw==",
+        "cursor": 3,
+        "stream": "stderr",
+        "text": "warning"
+      },
+      {
+        "content_base64": "OiBjb25zdGFudCBgcmV2aXNpb25gIHNob3VsZCBoYXZlIGFuIHVwcGVyIGNhc2UgbmFtZQogLS0+IHNyY1xtYWluLnJzOjI6NwogIHwKMiB8IGNvbnN0IHJldmlzaW9uOiAmc3RyID0gaW5jbHVkZV9zdHIhKCIuLi9yZXZpc2lvbi50eHQiKTsKICB8ICAgICAgIF5eXl5eXl5eCiAgfAogID0gbm90ZTogYCNbd2Fybihub25fdXBwZXJfY2FzZV9nbG9iYWxzKV1gIChwYXJ0IG9mIGAjW3dhcm4obm9uc3RhbmRhcmRfc3R5bGUpXWApIG9uIGJ5IGRlZmF1bHQKaGVscDogY29udmVydCB0aGUgaWRlbnRpZmllciB0byB1cHBlciBjYXNlCiAgfAoyIC0gY29uc3QgcmV2aXNpb246ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwoyICsgY29uc3QgUkVWSVNJT046ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwogIHwKCg==",
+        "cursor": 4,
+        "stream": "stderr",
+        "text": ": constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\n"
+      },
+      {
+        "content_base64": "d2FybmluZw==",
+        "cursor": 5,
+        "stream": "stderr",
+        "text": "warning"
+      },
+      {
+        "content_base64": "OiBgdzdicmlkZ2VfZTJlX2ZpeHR1cmVgIChiaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIikgZ2VuZXJhdGVkIDEgd2FybmluZyAocnVuIGBjYXJnbyBmaXggLS1iaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIiAtcCB3N2JyaWRnZV9lMmVfZml4dHVyZWAgdG8gYXBwbHkgMSBzdWdnZXN0aW9uKQogICAgRmluaXNoZWQgYGRldmAgcHJvZmlsZSBbdW5vcHRpbWl6ZWQgKyBkZWJ1Z2luZm9dIHRhcmdldChzKSBpbiAwLjQ4cwo=",
+        "cursor": 6,
+        "stream": "stderr",
+        "text": ": `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.48s\n"
+      }
+    ]
+  },
+  "test": {
+    "process_id": "1790806472446416600-3",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-bKijC0",
+      "exit_code": 0,
+      "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-bKijC0)\nwarning: constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\nwarning: `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\" test) generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture --tests` to apply 1 suggestion)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.48s\n     Running unittests src\\bin\\stream_probe.rs (target\\debug\\deps\\stream_probe-a3ef899ed04b04fe.exe)\n     Running unittests src\\main.rs (target\\debug\\deps\\w7bridge_e2e_fixture-c86170e422e0bd94.exe)\n",
+      "stderr_truncated": false,
+      "stdout": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 1 test\ntest mac_revision_was_compiled ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+      "stdout_truncated": false,
+      "success": true
+    },
+    "events": [
+      {
+        "content_base64": "ICAgQ29tcGlsaW5n",
+        "cursor": 1,
+        "stream": "stderr",
+        "text": "   Compiling"
+      },
+      {
+        "content_base64": "IHc3YnJpZGdlX2UyZV9maXh0dXJlIHYwLjEuMCAoRDpcdzdicmlkZ2VcZmF0b21pYy0yMTU4XGZpeHR1cmVcLnc3YnJpZGdlXGJ1aWxkLWJLaWpDMCkK",
+        "cursor": 2,
+        "stream": "stderr",
+        "text": " w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-bKijC0)\n"
+      },
+      {
+        "content_base64": "d2FybmluZw==",
+        "cursor": 3,
+        "stream": "stderr",
+        "text": "warning"
+      },
+      {
+        "content_base64": "OiBjb25zdGFudCBgcmV2aXNpb25gIHNob3VsZCBoYXZlIGFuIHVwcGVyIGNhc2UgbmFtZQogLS0+IHNyY1xtYWluLnJzOjI6NwogIHwKMiB8IGNvbnN0IHJldmlzaW9uOiAmc3RyID0gaW5jbHVkZV9zdHIhKCIuLi9yZXZpc2lvbi50eHQiKTsKICB8ICAgICAgIF5eXl5eXl5eCiAgfAogID0gbm90ZTogYCNbd2Fybihub25fdXBwZXJfY2FzZV9nbG9iYWxzKV1gIChwYXJ0IG9mIGAjW3dhcm4obm9uc3RhbmRhcmRfc3R5bGUpXWApIG9uIGJ5IGRlZmF1bHQKaGVscDogY29udmVydCB0aGUgaWRlbnRpZmllciB0byB1cHBlciBjYXNlCiAgfAoyIC0gY29uc3QgcmV2aXNpb246ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwoyICsgY29uc3QgUkVWSVNJT046ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwogIHwKCg==",
+        "cursor": 4,
+        "stream": "stderr",
+        "text": ": constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\n"
+      },
+      {
+        "content_base64": "d2FybmluZw==",
+        "cursor": 5,
+        "stream": "stderr",
+        "text": "warning"
+      },
+      {
+        "content_base64": "OiBgdzdicmlkZ2VfZTJlX2ZpeHR1cmVgIChiaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIiB0ZXN0KSBnZW5lcmF0ZWQgMSB3YXJuaW5nIChydW4gYGNhcmdvIGZpeCAtLWJpbiAidzdicmlkZ2VfZTJlX2ZpeHR1cmUiIC1wIHc3YnJpZGdlX2UyZV9maXh0dXJlIC0tdGVzdHNgIHRvIGFwcGx5IDEgc3VnZ2VzdGlvbikKICAgIEZpbmlzaGVkIGB0ZXN0YCBwcm9maWxlIFt1bm9wdGltaXplZCArIGRlYnVnaW5mb10gdGFyZ2V0KHMpIGluIDAuNDhzCg==",
+        "cursor": 6,
+        "stream": "stderr",
+        "text": ": `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\" test) generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture --tests` to apply 1 suggestion)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.48s\n"
+      },
+      {
+        "content_base64": "ICAgICBSdW5uaW5n",
+        "cursor": 7,
+        "stream": "stderr",
+        "text": "     Running"
+      },
+      {
+        "content_base64": "IHVuaXR0ZXN0cyBzcmNcYmluXHN0cmVhbV9wcm9iZS5ycyAodGFyZ2V0XGRlYnVnXGRlcHNcc3RyZWFtX3Byb2JlLWEzZWY4OTllZDA0YjA0ZmUuZXhlKQo=",
+        "cursor": 8,
+        "stream": "stderr",
+        "text": " unittests src\\bin\\stream_probe.rs (target\\debug\\deps\\stream_probe-a3ef899ed04b04fe.exe)\n"
+      },
+      {
+        "content_base64": "CnJ1bm5pbmcgMCB0ZXN0cwo=",
+        "cursor": 9,
+        "stream": "stdout",
+        "text": "\nrunning 0 tests\n"
+      },
+      {
+        "content_base64": "CnRlc3QgcmVzdWx0OiBvay4gMCBwYXNzZWQ7IDAgZmFpbGVkOyAwIGlnbm9yZWQ7IDAgbWVhc3VyZWQ7IDAgZmlsdGVyZWQgb3V0OyBmaW5pc2hlZCBpbiAwLjAwcwoK",
+        "cursor": 10,
+        "stream": "stdout",
+        "text": "\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n"
+      },
+      {
+        "content_base64": "ICAgICBSdW5uaW5n",
+        "cursor": 11,
+        "stream": "stderr",
+        "text": "     Running"
+      },
+      {
+        "content_base64": "IHVuaXR0ZXN0cyBzcmNcbWFpbi5ycyAodGFyZ2V0XGRlYnVnXGRlcHNcdzdicmlkZ2VfZTJlX2ZpeHR1cmUtYzg2MTcwZTQyMmUwYmQ5NC5leGUpCg==",
+        "cursor": 12,
+        "stream": "stderr",
+        "text": " unittests src\\main.rs (target\\debug\\deps\\w7bridge_e2e_fixture-c86170e422e0bd94.exe)\n"
+      },
+      {
+        "content_base64": "CnJ1bm5pbmcgMSB0ZXN0Cg==",
+        "cursor": 13,
+        "stream": "stdout",
+        "text": "\nrunning 1 test\n"
+      },
+      {
+        "content_base64": "dGVzdCBtYWNfcmV2aXNpb25fd2FzX2NvbXBpbGVkIC4uLiA=",
+        "cursor": 14,
+        "stream": "stdout",
+        "text": "test mac_revision_was_compiled ... "
+      },
+      {
+        "content_base64": "b2sKCnRlc3QgcmVzdWx0OiBvay4gMSBwYXNzZWQ7IDAgZmFpbGVkOyAwIGlnbm9yZWQ7IDAgbWVhc3VyZWQ7IDAgZmlsdGVyZWQgb3V0OyBmaW5pc2hlZCBpbiAwLjAwcwoK",
+        "cursor": 15,
+        "stream": "stdout",
+        "text": "ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n"
+      }
+    ]
+  },
+  "run": {
+    "process_id": "1790806474401434200-4",
+    "output": {
+      "command": "run",
+      "events": [
+        {
+          "content_base64": "ICAgQ29tcGlsaW5n",
+          "cursor": 1,
+          "stream": "stderr",
+          "text": "   Compiling"
+        },
+        {
+          "content_base64": "IHc3YnJpZGdlX2UyZV9maXh0dXJlIHYwLjEuMCAoRDpcdzdicmlkZ2VcZmF0b21pYy0yMTU4XGZpeHR1cmUpCg==",
+          "cursor": 2,
+          "stream": "stderr",
+          "text": " w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture)\n"
+        },
+        {
+          "content_base64": "d2FybmluZw==",
+          "cursor": 3,
+          "stream": "stderr",
+          "text": "warning"
+        },
+        {
+          "content_base64": "OiBjb25zdGFudCBgcmV2aXNpb25gIHNob3VsZCBoYXZlIGFuIHVwcGVyIGNhc2UgbmFtZQogLS0+IHNyY1xtYWluLnJzOjI6NwogIHwKMiB8IGNvbnN0IHJldmlzaW9uOiAmc3RyID0gaW5jbHVkZV9zdHIhKCIuLi9yZXZpc2lvbi50eHQiKTsKICB8ICAgICAgIF5eXl5eXl5eCiAgfAogID0gbm90ZTogYCNbd2Fybihub25fdXBwZXJfY2FzZV9nbG9iYWxzKV1gIChwYXJ0IG9mIGAjW3dhcm4obm9uc3RhbmRhcmRfc3R5bGUpXWApIG9uIGJ5IGRlZmF1bHQKaGVscDogY29udmVydCB0aGUgaWRlbnRpZmllciB0byB1cHBlciBjYXNlCiAgfAoyIC0gY29uc3QgcmV2aXNpb246ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwoyICsgY29uc3QgUkVWSVNJT046ICZzdHIgPSBpbmNsdWRlX3N0ciEoIi4uL3JldmlzaW9uLnR4dCIpOwogIHwKCg==",
+          "cursor": 4,
+          "stream": "stderr",
+          "text": ": constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\n"
+        },
+        {
+          "content_base64": "d2FybmluZw==",
+          "cursor": 5,
+          "stream": "stderr",
+          "text": "warning"
+        },
+        {
+          "content_base64": "OiBgdzdicmlkZ2VfZTJlX2ZpeHR1cmVgIChiaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIikgZ2VuZXJhdGVkIDEgd2FybmluZyAocnVuIGBjYXJnbyBmaXggLS1iaW4gInc3YnJpZGdlX2UyZV9maXh0dXJlIiAtcCB3N2JyaWRnZV9lMmVfZml4dHVyZWAgdG8gYXBwbHkgMSBzdWdnZXN0aW9uKQogICAgRmluaXNoZWQgYGRldmAgcHJvZmlsZSBbdW5vcHRpbWl6ZWQgKyBkZWJ1Z2luZm9dIHRhcmdldChzKSBpbiAwLjU0cwo=",
+          "cursor": 6,
+          "stream": "stderr",
+          "text": ": `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.54s\n"
+        },
+        {
+          "content_base64": "ICAgICBSdW5uaW5n",
+          "cursor": 7,
+          "stream": "stderr",
+          "text": "     Running"
+        },
+        {
+          "content_base64": "IGB0YXJnZXRcZGVidWdcdzdicmlkZ2VfZTJlX2ZpeHR1cmUuZXhlYAo=",
+          "cursor": 8,
+          "stream": "stderr",
+          "text": " `target\\debug\\w7bridge_e2e_fixture.exe`\n"
+        },
+        {
+          "content_base64": "QVBQX1NURE9VVCByZXZpc2lvbj1tYWMtZWRpdC12Mwo=",
+          "cursor": 9,
+          "stream": "stdout",
+          "text": "APP_STDOUT revision=mac-edit-v3\n"
+        },
+        {
+          "content_base64": "QVBQX1NUREVSUiByZXZpc2lvbj0=",
+          "cursor": 10,
+          "stream": "stderr",
+          "text": "APP_STDERR revision="
+        },
+        {
+          "content_base64": "bWFjLWVkaXQtdjMK",
+          "cursor": 11,
+          "stream": "stderr",
+          "text": "mac-edit-v3\n"
+        }
+      ],
+      "next_cursor": 11,
+      "process_id": "1790806474401434200-4",
+      "result": null,
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "status": "running",
+      "truncated": false
+    }
+  },
+  "status": {
+    "available_command_slots": 1,
+    "boot_id": "52904-1790806465244482500",
+    "commands": [
+      "build",
+      "check",
+      "run",
+      "stream",
+      "test"
+    ],
+    "device_id": "desktop-8ueaoeb",
+    "device_online": true,
+    "diagnostic_duration_ms": 5,
+    "git": {
+      "enabled": false
+    },
+    "last_error": null,
+    "last_local_sync": {
+      "conflicts": [],
+      "error": null,
+      "observed_at": 1790806471,
+      "status": "synced"
+    },
+    "local_root": "/tmp/w7bridge-complete-2158/fixture-project",
+    "machine_os": "windows",
+    "peer_online": true,
+    "processes": [
+      {
+        "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7K0qMu",
+        "command": "check",
+        "process_id": "1790806468337521600-1",
+        "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+        "source_snapshot": true,
+        "status": "stopped"
+      },
+      {
+        "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-jbhv75",
+        "command": "build",
+        "process_id": "1790806470359207300-2",
+        "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+        "source_snapshot": true,
+        "status": "stopped"
+      },
+      {
+        "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-bKijC0",
+        "command": "test",
+        "process_id": "1790806472446416600-3",
+        "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+        "source_snapshot": true,
+        "status": "stopped"
+      },
+      {
+        "artifact_root": null,
+        "command": "run",
+        "process_id": "1790806474401434200-4",
+        "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+        "source_snapshot": false,
+        "status": "running"
+      }
+    ],
+    "project_id": "desktop-8ueaoeb__fixture",
+    "queue_depth": 0,
+    "remote_project_id": "fixture",
+    "requires_sync": true,
+    "root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture",
+    "sync": {
+      "checkpoint_age_seconds": 1,
+      "confirmed_generation": 4,
+      "conflicts": [],
+      "lease_seconds": 6,
+      "manifest_hash": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "paired_devices": {
+        "checkpoint_age_seconds": 1,
+        "confirmed_generation": 4,
+        "conflicts": [],
+        "lease_seconds": 6,
+        "manifest_hash": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+        "peers": [
+          {
+            "checkpoint_age_seconds": 1,
+            "confirmed_generation": 4,
+            "conflicts": [],
+            "lease_seconds": 6,
+            "manifest_hash": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+            "requested_generation": 4,
+            "rpc_latency_ms": 7,
+            "status": "synced"
+          }
+        ],
+        "requested_generation": 4,
+        "rpc_latency_ms": 7,
+        "status": "synced"
+      },
+      "requested_generation": 4,
+      "rpc_latency_ms": 7,
+      "status": "synced"
+    }
+  },
+  "events": {
+    "boot_id": "52904-1790806465244482500",
+    "events": [
+      {
+        "cursor": 1,
+        "data": {
+          "path": "src/main.rs",
+          "sha256": "9f6da1e1ec3a4d88a3ad34a67cbf59deff08f5ff1b4de98c9051d2a3bdbff80b"
+        },
+        "kind": "file_synced",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806466109
+      },
+      {
+        "cursor": 2,
+        "data": {
+          "accepted": true,
+          "changed": true,
+          "manifest_hash": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "requested_generation": 0
+        },
+        "kind": "sync_completed",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806466137
+      },
+      {
+        "cursor": 3,
+        "data": {
+          "command": "check",
+          "process_id": "1790806468337521600-1",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c"
+        },
+        "kind": "process_started",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806468437
+      },
+      {
+        "cursor": 4,
+        "data": {
+          "command": "check",
+          "error": null,
+          "exit_code": 0,
+          "process_id": "1790806468337521600-1",
+          "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "revision_verified": true
+        },
+        "kind": "command_completed",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806468810
+      },
+      {
+        "cursor": 5,
+        "data": {
+          "command": "build",
+          "process_id": "1790806470359207300-2",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c"
+        },
+        "kind": "process_started",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806470455
+      },
+      {
+        "cursor": 6,
+        "data": {
+          "command": "build",
+          "error": null,
+          "exit_code": 0,
+          "process_id": "1790806470359207300-2",
+          "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "revision_verified": true
+        },
+        "kind": "command_completed",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806471101
+      },
+      {
+        "cursor": 7,
+        "data": {
+          "command": "test",
+          "process_id": "1790806472446416600-3",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c"
+        },
+        "kind": "process_started",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806472549
+      },
+      {
+        "cursor": 8,
+        "data": {
+          "command": "test",
+          "error": null,
+          "exit_code": 0,
+          "process_id": "1790806472446416600-3",
+          "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+          "revision_verified": true
+        },
+        "kind": "command_completed",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806473339
+      },
+      {
+        "cursor": 9,
+        "data": {
+          "command": "run",
+          "process_id": "1790806474401434200-4",
+          "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c"
+        },
+        "kind": "process_started",
+        "project_id": "fixture",
+        "timestamp_ms": 1790806474504
+      }
+    ],
+    "next_cursor": 9,
+    "truncated": false
+  },
+  "revision_file_sha256": "1598d6b477009e89e5a77c3a748148148a20ee8bc2d5b4bfe3b791972b85b167"
+}

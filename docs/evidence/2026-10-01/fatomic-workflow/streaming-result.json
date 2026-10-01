@@ -1,0 +1,74 @@
+{
+  "default": {
+    "process_id": "1790801230612289800-5",
+    "first_response_ms": 957.1729579984094,
+    "completion_ms": 3252.074249998259,
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-MgrRKG",
+      "exit_code": 0,
+      "revision_at_completion": "fcfc96ae22606702d8f69da111732f6dbc04df3d98163d289a04c44ac7fe35fa",
+      "revision_at_start": "fcfc96ae22606702d8f69da111732f6dbc04df3d98163d289a04c44ac7fe35fa",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-MgrRKG)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.32s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+      "stderr_truncated": false,
+      "stdout": "STDOUT_1STDOUT_2",
+      "stdout_truncated": false,
+      "success": true
+    }
+  },
+  "notification_routes": {
+    "native-stream": {
+      "count": 12,
+      "process_id": "1790801234687423200-6",
+      "exit_code": 0
+    },
+    "parallel-build": {
+      "count": 8,
+      "process_id": "1790801234693483700-7",
+      "exit_code": 0
+    }
+  },
+  "stdout_before_completion_ms": 1927.384875001735,
+  "stderr_before_completion_ms": 1927.384875001735,
+  "stream_result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-1QhEnW",
+    "events": [],
+    "exit_code": 0,
+    "next_cursor": 16,
+    "process_id": "1790801234687423200-6",
+    "revision_at_completion": "fcfc96ae22606702d8f69da111732f6dbc04df3d98163d289a04c44ac7fe35fa",
+    "revision_at_start": "fcfc96ae22606702d8f69da111732f6dbc04df3d98163d289a04c44ac7fe35fa",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-1QhEnW)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+    "stderr_truncated": false,
+    "stdout": "STDOUT_1STDOUT_2",
+    "stdout_truncated": false,
+    "success": true,
+    "truncated": false
+  },
+  "parallel_result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-L4jRyN",
+    "events": [],
+    "exit_code": 0,
+    "next_cursor": 12,
+    "process_id": "1790801234693483700-7",
+    "revision_at_completion": "fcfc96ae22606702d8f69da111732f6dbc04df3d98163d289a04c44ac7fe35fa",
+    "revision_at_start": "fcfc96ae22606702d8f69da111732f6dbc04df3d98163d289a04c44ac7fe35fa",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "completed",
+    "stderr": "    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-L4jRyN)\nwarning: constant `revision` should have an upper case name\n --> src\\main.rs:2:7\n  |\n2 | const revision: &str = include_str!(\"../revision.txt\");\n  |       ^^^^^^^^\n  |\n  = note: `#[warn(non_upper_case_globals)]` (part of `#[warn(nonstandard_style)]`) on by default\nhelp: convert the identifier to upper case\n  |\n2 - const revision: &str = include_str!(\"../revision.txt\");\n2 + const REVISION: &str = include_str!(\"../revision.txt\");\n  |\n\nwarning: `w7bridge_e2e_fixture` (bin \"w7bridge_e2e_fixture\") generated 1 warning (run `cargo fix --bin \"w7bridge_e2e_fixture\" -p w7bridge_e2e_fixture` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.39s\n",
+    "stderr_truncated": false,
+    "stdout": "",
+    "stdout_truncated": false,
+    "success": true,
+    "truncated": false
+  }
+}

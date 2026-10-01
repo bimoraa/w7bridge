@@ -16,7 +16,7 @@ mod server;
 pub mod sync;
 mod tools;
 mod update;
-pub use app::run;
+pub use app::{run, run_desktop};
 pub use config::Config;
 pub use error::{ConfigError, ConnectError, FileError, InstallError, PolicyError, SyncError};
 pub use filesystem as files;

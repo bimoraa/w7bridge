@@ -1,0 +1,30 @@
+{
+  "source_id": "22ac45684dd9cb1e0ed0329102c54d2947686ed7c732bfe5049fc609c2cc65fa",
+  "revision": "mac-edit-v3",
+  "fixture_files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "d4d6f00f47d95bbcc63b1e86a9caf3968cdce69bb6793ddab232841c21b21585"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "5b9d991f7761f221013a47b59868553d8bffdf520c4fd6d1bb7550d7c626cb96"
+    },
+    {
+      "path": "MEMORY.md",
+      "sha256": "ad5e3a35a59f066108b88748b2c897934ce3e467190a820fb9addd590c783e00"
+    },
+    {
+      "path": "revision.txt",
+      "sha256": "1598d6b477009e89e5a77c3a748148148a20ee8bc2d5b4bfe3b791972b85b167"
+    },
+    {
+      "path": "src/bin/stream_probe.rs",
+      "sha256": "3eca88bcebffdd95e6c481fa892ddf9568a9127d6d4bf1139c97b656150e3961"
+    },
+    {
+      "path": "src/main.rs",
+      "sha256": "9f6da1e1ec3a4d88a3ad34a67cbf59deff08f5ff1b4de98c9051d2a3bdbff80b"
+    }
+  ]
+}

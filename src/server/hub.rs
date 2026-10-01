@@ -3,7 +3,7 @@
 use crate::{
     config::{Pair, SyncSettings},
     connection::session::Remote,
-    filesystem::{FileSettings, FileStore, digest},
+    filesystem::digest,
     protocol::types::Failure,
     sync::Session,
 };
@@ -213,6 +213,7 @@ impl Hub {
                     value["project_id"] = json!(id);
                     value["remote_project_id"] = json!(peer.pair.remote_project);
                     value["local_root"] = json!(peer.pair.local_root);
+                    self.local_status(peer, &mut value).await;
                     *peer.status.lock().await = value.clone();
                     return value;
 
@@ -233,20 +234,45 @@ impl Hub {
         value["project_id"] = json!(id);
         value["remote_project_id"] = json!(peer.pair.remote_project);
         value["local_root"] = json!(peer.pair.local_root);
-        if let Ok(files) = FileStore::new(&peer.pair.local_root, FileSettings { enabled: true, ..Default::default() })
-            && let Ok(binding) = peer.pair.binding()
-            && let Ok(session) = Session::open_pair(files, binding)
-        {
-
-            value["last_local_sync"] = json!(session.report());
-
-        }
+        self.local_status(peer, &mut value).await;
         value["cached_remote_state"] = json!(true);
         value
 
     }
 
+    async fn local_status( &self, peer: &Peer, value: &mut Value, ) {
+
+        if let Some(error) = peer.status.lock().await.get("sync_host_error") {
+
+            value["sync_host_error"] = error.clone();
+
+        }
+        if let Ok(files) = crate::filesystem::watcher::local_files(&peer.pair)
+            && let Ok(binding) = peer.pair.binding()
+            && let Ok(session) = Session::open_pair(files, binding)
+        {
+
+            value["last_local_sync"] = json!(session.report());
+            if session.report().status == crate::sync::Status::Synced {
+
+                value.as_object_mut().map(|fields| fields.remove("sync_host_error"));
+
+            }
+            if let Some(error) = &session.report().error {
+
+                value["last_error"] = json!(error);
+
+            }
+
+        }
+
+    }
+
 }
+
+#[cfg(test)]
+#[path = "../../tests/unit/hub_status.rs"]
+mod tests;
 
 impl ServerHandler for Hub {
 

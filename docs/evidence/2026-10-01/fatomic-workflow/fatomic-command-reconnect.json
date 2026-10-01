@@ -1,0 +1,28 @@
+{
+  "process_id": "1790806321068372800-2",
+  "result": {
+    "command": "check",
+    "events": [],
+    "next_cursor": 1,
+    "process_id": "1790806321068372800-2",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac\\.w7bridge\\build-2O3svC",
+      "exit_code": 1,
+      "revision_at_completion": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+      "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "\uc800\uc7a5 \uacf5\uac04 \ubd80\uc871: C:\\ free=16.67 GiB, required=40 GiB. native command\ub97c \uc2dc\uc791\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4\r\n",
+      "stderr_truncated": false,
+      "stdout": "",
+      "stdout_truncated": false,
+      "success": false
+    },
+    "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+    "status": "stopped",
+    "truncated": false
+  },
+  "command_rerun": false
+}

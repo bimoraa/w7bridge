@@ -89,6 +89,8 @@ pub(crate) struct ProjectDefinition {
     pub root: PathBuf,
     #[serde(default)]
     pub requires_sync: bool,
+    #[serde(default = "default_sync_timeout")]
+    pub sync_timeout_seconds: u64,
     #[serde(default)]
     pub files: FileSettings,
     #[serde(default)]
@@ -97,6 +99,12 @@ pub(crate) struct ProjectDefinition {
     pub git: Option<GitSettings>,
     #[serde(default)]
     pub commands: BTreeMap<String, CommandDefinition>,
+
+}
+
+fn default_sync_timeout() -> u64 {
+
+    30
 
 }
 
@@ -123,6 +131,8 @@ pub(crate) struct CommandDefinition {
 pub(crate) struct GitSettings {
 
     pub executable: PathBuf,
+    #[serde(default)]
+    pub local_only_paths: Vec<String>,
 
 }
 
@@ -172,6 +182,8 @@ pub struct FileSettings {
 
     pub enabled: bool,
     pub exclude_dirs: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub source_dirs: Vec<String>,
     pub context_files: Vec<String>,
     pub max_file_bytes: usize,
 
@@ -181,7 +193,15 @@ impl Default for FileSettings {
 
     fn default( ) -> Self {
 
-        Self { enabled: false, exclude_dirs: Vec::new(), context_files: Vec::new(), max_file_bytes: 64 * 1024 * 1024 }
+        Self {
+
+            enabled: false,
+            exclude_dirs: Vec::new(),
+            source_dirs: Vec::new(),
+            context_files: Vec::new(),
+            max_file_bytes: 64 * 1024 * 1024,
+
+        }
 
     }
 
@@ -227,7 +247,29 @@ pub(crate) struct Pair {
     #[serde(default)]
     pub git_executable: Option<PathBuf>,
     #[serde(default)]
+    pub initial_git_handoff: Option<GitBootstrap>,
+    #[serde(default)]
     pub screenshot_config: Option<String>,
+
+}
+
+/** 기존 양쪽 repository의 첫 인계만 승인한다. 검토한 state hash와 같은 HEAD/index가 필수다. */
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GitBootstrap {
+
+    pub source: GitSource,
+    pub expected_local_state: String,
+    pub expected_remote_state: String,
+
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum GitSource {
+
+    Local,
+    Remote,
 
 }
 
@@ -236,6 +278,8 @@ pub(crate) struct Pair {
 pub(crate) struct ServiceSettings {
 
     pub allowed_sid: Option<String>,
+    #[serde(default)]
+    pub desktop: bool,
 
 }
 

@@ -28,15 +28,16 @@ impl FileStore {
     /** root별 persistent ID다. source나 권한을 담지 않으며 metadata가 없는 새 root에는 다른 ID를 만든다. */
     pub fn root_key(&self) -> Result<String, FileError> {
 
+        let reading = self.read_lock()?;
+        if let Some(key) = self.stored_root_key()? {
+
+            return Ok(key);
+
+        }
+        drop(reading);
         let _lock = self.lock("access.lock")?;
-        if let Some(bytes) = self.load_metadata("root-key")? {
+        if let Some(key) = self.stored_root_key()? {
 
-            let key = String::from_utf8(bytes).map_err(|_| FileError::Data)?;
-            if key.len() != 64 || !key.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
-
-                return Err(FileError::Data);
-
-            }
             return Ok(key);
 
         }
@@ -46,6 +47,23 @@ impl FileStore {
         temporary.as_file().sync_all()?;
         temporary.persist_noclobber(self.metadata_path("root-key")?).map_err(|error| FileError::Io(error.error))?;
         Ok(key)
+
+    }
+
+    fn stored_root_key( &self, ) -> Result<Option<String>,FileError> {
+
+        if let Some(bytes) = self.load_metadata("root-key")? {
+
+            let key = String::from_utf8(bytes).map_err(|_| FileError::Data)?;
+            if key.len() != 64 || !key.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
+
+                return Err(FileError::Data);
+
+            }
+            return Ok(Some(key));
+
+        }
+        Ok(None)
 
     }
 
@@ -69,6 +87,19 @@ impl FileStore {
     /** 같은 metadata 이름의 작업을 직렬화한다. spawn 직후의 짧은 경합은 최대 100 ms만 기다린다. */
     pub fn lock(&self, name: &str) -> Result<File, FileError> {
 
+        self.acquire_lock(name, false)
+
+    }
+
+    /** 읽기는 서로 함께 실행하고 파일 교체는 exclusive lock으로 막아. */
+    pub(super) fn read_lock( &self, ) -> Result<File,FileError> {
+
+        self.acquire_lock("access.lock", true)
+
+    }
+
+    fn acquire_lock( &self, name: &str, shared: bool, ) -> Result<File,FileError> {
+
         let pair_lock = name.strip_prefix("sync-").and_then(|name| name.strip_suffix(".lock")).is_some_and(|hash| {
 
             hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
@@ -89,7 +120,8 @@ impl FileStore {
         let started = std::time::Instant::now();
         loop {
 
-            match file.try_lock_exclusive() {
+            let attempt = if shared { FileExt::try_lock_shared(&file) } else { file.try_lock_exclusive() };
+            match attempt {
 
                 Ok(()) => break,
                 Err(error)
