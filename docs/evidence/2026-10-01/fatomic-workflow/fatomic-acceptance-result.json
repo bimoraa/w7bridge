@@ -1,0 +1,226 @@
+{
+  "projects": {
+    "hub_os": "macos",
+    "projects": [
+      {
+        "commands": [
+          "build",
+          "check",
+          "run",
+          "test"
+        ],
+        "device_id": "desktop-8ueaoeb",
+        "id": "desktop-8ueaoeb__fatomic",
+        "local_root": "/Users/hillaryabigail/Documents/ChatGPT/fatomic",
+        "remote_project_id": "fatomic",
+        "root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac",
+        "status": {
+          "available_command_slots": 2,
+          "boot_id": "105800-1790805603317571500",
+          "commands": [
+            "build",
+            "check",
+            "run",
+            "test"
+          ],
+          "device_id": "desktop-8ueaoeb",
+          "device_online": true,
+          "diagnostic_duration_ms": 2056,
+          "git": {
+            "enabled": true,
+            "error": "Git \uc0c1\ud0dc \uc870\ud68c \uc81c\ud55c \uc2dc\uac04\uc774 \ucd08\uacfc\ub418\uc5c8\uc2b5\ub2c8\ub2e4"
+          },
+          "last_error": "sync host\uac00 \uc885\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+          "last_local_sync": {
+            "conflicts": [],
+            "error": "sync host\uac00 \uc885\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+            "observed_at": 1790805774,
+            "status": "offline"
+          },
+          "local_root": "/Users/hillaryabigail/Documents/ChatGPT/fatomic",
+          "machine_os": "windows",
+          "peer_online": false,
+          "processes": [
+            {
+              "artifact_root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac\\.w7bridge\\build-HpyWxg",
+              "command": "check",
+              "process_id": "1790805809374809200-1",
+              "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+              "source_snapshot": true,
+              "status": "stopped"
+            }
+          ],
+          "project_id": "desktop-8ueaoeb__fatomic",
+          "queue_depth": 0,
+          "remote_project_id": "fatomic",
+          "requires_sync": true,
+          "root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac",
+          "sync": {
+            "checkpoint_age_seconds": 402,
+            "confirmed_generation": 1,
+            "conflicts": [],
+            "lease_seconds": 6,
+            "manifest_hash": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+            "paired_devices": {
+              "confirmed_generation": 0,
+              "conflicts": [],
+              "requested_generation": 0,
+              "status": "offline"
+            },
+            "requested_generation": 1,
+            "rpc_latency_ms": 2834,
+            "status": "offline"
+          }
+        }
+      }
+    ]
+  },
+  "first": {
+    "command": "check",
+    "events": [],
+    "next_cursor": 0,
+    "process_id": "1790806321068372800-2",
+    "project_id": "fatomic",
+    "result": null,
+    "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+    "status": "running",
+    "stderr": "",
+    "stdout": "",
+    "truncated": false
+  },
+  "first_duration_seconds": 132.4778279999955,
+  "output": {
+    "command": "check",
+    "events": [],
+    "next_cursor": 1,
+    "process_id": "1790806321068372800-2",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac\\.w7bridge\\build-2O3svC",
+      "exit_code": 1,
+      "revision_at_completion": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+      "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "\uc800\uc7a5 \uacf5\uac04 \ubd80\uc871: C:\\ free=16.67 GiB, required=40 GiB. native command\ub97c \uc2dc\uc791\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4\r\n",
+      "stderr_truncated": false,
+      "stdout": "",
+      "stdout_truncated": false,
+      "success": false
+    },
+    "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+    "status": "stopped",
+    "truncated": false
+  },
+  "events": [
+    {
+      "content_base64": "7KCA7J6lIOqzteqwhCDrtoDsobE6IEM6XCBmcmVlPTE2LjY3IEdpQiwgcmVxdWlyZWQ9NDAgR2lCLiBuYXRpdmUgY29tbWFuZOulvCDsi5zsnpHtlZjsp4Ag7JWK7JWY7Iq164uI64ukDQo=",
+      "cursor": 1,
+      "stream": "stderr",
+      "text": "\uc800\uc7a5 \uacf5\uac04 \ubd80\uc871: C:\\ free=16.67 GiB, required=40 GiB. native command\ub97c \uc2dc\uc791\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4\r\n"
+    }
+  ],
+  "status": {
+    "available_command_slots": 2,
+    "boot_id": "105800-1790805603317571500",
+    "commands": [
+      "build",
+      "check",
+      "run",
+      "test"
+    ],
+    "device_id": "desktop-8ueaoeb",
+    "device_online": true,
+    "diagnostic_duration_ms": 2011,
+    "git": {
+      "enabled": true,
+      "error": "Git \uc0c1\ud0dc \uc870\ud68c \uc81c\ud55c \uc2dc\uac04\uc774 \ucd08\uacfc\ub418\uc5c8\uc2b5\ub2c8\ub2e4"
+    },
+    "last_error": {
+      "cursor": 5,
+      "data": {
+        "command": "check",
+        "error": null,
+        "exit_code": 1,
+        "process_id": "1790806321068372800-2",
+        "revision_at_completion": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+        "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+        "revision_verified": true
+      },
+      "kind": "process_crashed",
+      "project_id": "fatomic",
+      "timestamp_ms": 1790806329543
+    },
+    "last_local_sync": {
+      "conflicts": [],
+      "error": null,
+      "observed_at": 1790806309,
+      "status": "syncing"
+    },
+    "local_root": "/Users/hillaryabigail/Documents/ChatGPT/fatomic",
+    "machine_os": "windows",
+    "peer_online": true,
+    "processes": [
+      {
+        "artifact_root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac\\.w7bridge\\build-HpyWxg",
+        "command": "check",
+        "process_id": "1790805809374809200-1",
+        "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+        "source_snapshot": true,
+        "status": "stopped"
+      },
+      {
+        "artifact_root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac\\.w7bridge\\build-2O3svC",
+        "command": "check",
+        "process_id": "1790806321068372800-2",
+        "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+        "source_snapshot": true,
+        "status": "stopped"
+      }
+    ],
+    "project_id": "desktop-8ueaoeb__fatomic",
+    "queue_depth": 0,
+    "remote_project_id": "fatomic",
+    "requires_sync": true,
+    "root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac",
+    "sync": {
+      "checkpoint_age_seconds": 5,
+      "confirmed_generation": 2,
+      "conflicts": [],
+      "lease_seconds": 6,
+      "manifest_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "paired_devices": {
+        "checkpoint_age_seconds": 5,
+        "confirmed_generation": 2,
+        "conflicts": [],
+        "lease_seconds": 6,
+        "manifest_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "peers": [
+          {
+            "checkpoint_age_seconds": 5,
+            "confirmed_generation": 2,
+            "conflicts": [],
+            "lease_seconds": 6,
+            "manifest_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "requested_generation": 2,
+            "rpc_latency_ms": 2834,
+            "status": "syncing"
+          }
+        ],
+        "requested_generation": 2,
+        "rpc_latency_ms": 2834,
+        "status": "syncing"
+      },
+      "requested_generation": 2,
+      "rpc_latency_ms": 2834,
+      "status": "syncing"
+    }
+  },
+  "history": {
+    "code": "busy",
+    "message": "\ub2e4\ub978 \ud30c\uc77c \uc791\uc5c5\uc774 \uc9c4\ud589 \uc911\uc785\ub2c8\ub2e4"
+  },
+  "process_id": "1790806321068372800-2",
+  "cursor": 1
+}

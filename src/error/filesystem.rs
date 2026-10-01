@@ -33,6 +33,8 @@ pub enum SyncError {
     Offline,
     #[error("peer가 파일 요청을 거부했거나 응답 형식이 올바르지 않습니다")]
     Peer,
+    #[error("peer 요청 실패: {0}")]
+    PeerRequest(String),
     #[error("peer project 설정을 확인하세요: {0}")]
     PeerConfig(&'static str),
     #[error("sync metadata가 손상되었거나 다른 pairing에 속합니다")]

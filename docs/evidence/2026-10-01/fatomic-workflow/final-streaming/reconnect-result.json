@@ -1,0 +1,139 @@
+{
+  "source_id": "22ac45684dd9cb1e0ed0329102c54d2947686ed7c732bfe5049fc609c2cc65fa",
+  "first": {
+    "command": "stream",
+    "events": [],
+    "next_cursor": 0,
+    "process_id": "1790806580990763200-8",
+    "project_id": "fixture",
+    "result": null,
+    "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "status": "running",
+    "stderr": "",
+    "stdout": "",
+    "truncated": false
+  },
+  "events_after_reconnect": [
+    {
+      "content_base64": "ICAgQ29tcGlsaW5n",
+      "cursor": 1,
+      "stream": "stderr",
+      "text": "   Compiling"
+    },
+    {
+      "content_base64": "IHc3YnJpZGdlX2UyZV9maXh0dXJlIHYwLjEuMCAoRDpcdzdicmlkZ2VcZmF0b21pYy0yMTU4XGZpeHR1cmVcLnc3YnJpZGdlXGJ1aWxkLVpscDBxRykK",
+      "cursor": 2,
+      "stream": "stderr",
+      "text": " w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-Zlp0qG)\n"
+    },
+    {
+      "content_base64": "ICAgIEZpbmlzaGVk",
+      "cursor": 3,
+      "stream": "stderr",
+      "text": "    Finished"
+    },
+    {
+      "content_base64": "IGBkZXZgIHByb2ZpbGUgW3Vub3B0aW1pemVkICsgZGVidWdpbmZvXSB0YXJnZXQocykgaW4gMC40NnMK",
+      "cursor": 4,
+      "stream": "stderr",
+      "text": " `dev` profile [unoptimized + debuginfo] target(s) in 0.46s\n"
+    },
+    {
+      "content_base64": "ICAgICBSdW5uaW5n",
+      "cursor": 5,
+      "stream": "stderr",
+      "text": "     Running"
+    },
+    {
+      "content_base64": "IGB0YXJnZXRcZGVidWdcc3RyZWFtX3Byb2JlLmV4ZWAK",
+      "cursor": 6,
+      "stream": "stderr",
+      "text": " `target\\debug\\stream_probe.exe`\n"
+    },
+    {
+      "content_base64": "U1RET1VUXzE=",
+      "cursor": 7,
+      "stream": "stdout",
+      "text": "STDOUT_1"
+    },
+    {
+      "content_base64": "U1RERVJSXw==",
+      "cursor": 8,
+      "stream": "stderr",
+      "text": "STDERR_"
+    },
+    {
+      "content_base64": "MQ==",
+      "cursor": 9,
+      "stream": "stderr",
+      "text": "1"
+    },
+    {
+      "content_base64": "U1RET1VUXzI=",
+      "cursor": 10,
+      "stream": "stdout",
+      "text": "STDOUT_2"
+    },
+    {
+      "content_base64": "U1RERVJSXw==",
+      "cursor": 11,
+      "stream": "stderr",
+      "text": "STDERR_"
+    },
+    {
+      "content_base64": "Mg==",
+      "cursor": 12,
+      "stream": "stderr",
+      "text": "2"
+    }
+  ],
+  "final": {
+    "command": "stream",
+    "events": [],
+    "next_cursor": 12,
+    "process_id": "1790806580990763200-8",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-Zlp0qG",
+      "exit_code": 0,
+      "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-Zlp0qG)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.46s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+      "stderr_truncated": false,
+      "stdout": "STDOUT_1STDOUT_2",
+      "stdout_truncated": false,
+      "success": true
+    },
+    "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "status": "stopped",
+    "truncated": false
+  },
+  "cursor_replay": {
+    "command": "stream",
+    "events": [],
+    "next_cursor": 12,
+    "process_id": "1790806580990763200-8",
+    "result": {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-Zlp0qG",
+      "exit_code": 0,
+      "revision_at_completion": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "revision_matches_at_completion": true,
+      "revision_verified": true,
+      "source_snapshot": true,
+      "status": "completed",
+      "stderr": "   Compiling w7bridge_e2e_fixture v0.1.0 (D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-Zlp0qG)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.46s\n     Running `target\\debug\\stream_probe.exe`\nSTDERR_1STDERR_2",
+      "stderr_truncated": false,
+      "stdout": "STDOUT_1STDOUT_2",
+      "stdout_truncated": false,
+      "success": true
+    },
+    "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+    "status": "stopped",
+    "truncated": false
+  },
+  "command_rerun": false
+}

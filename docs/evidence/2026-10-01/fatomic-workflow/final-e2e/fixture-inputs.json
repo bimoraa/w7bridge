@@ -1,0 +1,29 @@
+{
+  "files": [
+    {
+      "path": "Cargo.toml",
+      "sha256": "5b9d991f7761f221013a47b59868553d8bffdf520c4fd6d1bb7550d7c626cb96",
+      "utf8": "[package]\nname=\"w7bridge_e2e_fixture\"\nversion=\"0.1.0\"\nedition=\"2024\"\ndefault-run=\"w7bridge_e2e_fixture\"\n\n[workspace]\n"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "d4d6f00f47d95bbcc63b1e86a9caf3968cdce69bb6793ddab232841c21b21585",
+      "utf8": "version = 4\n\n[[package]]\nname = \"w7bridge_e2e_fixture\"\nversion = \"0.1.0\"\n"
+    },
+    {
+      "path": "revision.txt",
+      "sha256": "1598d6b477009e89e5a77c3a748148148a20ee8bc2d5b4bfe3b791972b85b167",
+      "utf8": "mac-edit-v3\n"
+    },
+    {
+      "path": "src/main.rs",
+      "sha256": "9f6da1e1ec3a4d88a3ad34a67cbf59deff08f5ff1b4de98c9051d2a3bdbff80b",
+      "utf8": "use std::{io::{Read,Write},net::TcpListener};\nconst revision: &str = include_str!(\"../revision.txt\");\nfn main() {\n    println!(\"APP_STDOUT revision={}\",revision.trim());\n    eprintln!(\"APP_STDERR revision={}\",revision.trim());\n    let listener = TcpListener::bind(\"127.0.0.1:18759\").unwrap();\n    for incoming in listener.incoming() {\n        let mut connection = incoming.unwrap();\n        let mut request = [0;4096];\n        let _ = connection.read(&mut request);\n        let body = format!(\"<!doctype html><html><body style='background:#111;color:#fff;font:32px sans-serif;padding:50px'><h1>w7bridge native Windows verification</h1><p>Compiled revision: <strong>{}</strong></p><p>Mac edit \u2192 sync \u2192 Windows Cargo build/test \u2192 live output</p></body></html>\",revision.trim());\n        write!(connection,\"HTTP/1.1 200 OK\\r\\nContent-Type: text/html; charset=utf-8\\r\\nContent-Length: {}\\r\\nConnection: close\\r\\n\\r\\n{}\",body.len(),body).unwrap();\n    }\n}\n#[test]\nfn mac_revision_was_compiled() { assert_eq!(revision,\"mac-edit-v3\\n\"); }\n"
+    },
+    {
+      "path": "src/bin/stream_probe.rs",
+      "sha256": "3eca88bcebffdd95e6c481fa892ddf9568a9127d6d4bf1139c97b656150e3961",
+      "utf8": "use std::{io::{self,Write},thread,time::Duration};\nfn main() {\n    for step in 1..=2 {\n        write!(io::stdout(),\"STDOUT_{step}\").unwrap();\n        io::stdout().flush().unwrap();\n        write!(io::stderr(),\"STDERR_{step}\").unwrap();\n        io::stderr().flush().unwrap();\n        thread::sleep(Duration::from_millis(1000));\n    }\n}\n"
+    }
+  ]
+}

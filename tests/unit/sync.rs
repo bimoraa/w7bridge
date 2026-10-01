@@ -1,6 +1,7 @@
 use super::*;
 use crate::FileError;
 use crate::filesystem::{FileSettings, FileStore, digest};
+use std::fs;
 use tempfile::tempdir;
 
 struct LocalPeer(FileStore);
@@ -27,6 +28,38 @@ impl Peer for LocalPeer {
 fn store(root: &std::path::Path) -> FileStore {
 
     FileStore::new(root, FileSettings { enabled: true, ..Default::default() }).unwrap()
+
+}
+
+#[tokio::test]
+async fn approved_source_policy_survives_watcher_restart_without_resetting_baseline( ) {
+
+    let root = tempdir().unwrap();
+    let peer = tempdir().unwrap();
+    let pair: crate::config::Pair = serde_json::from_value(serde_json::json!({
+        "local_root": root.path(), "remote_project":"sample", "host":"windows", "service":true
+    }))
+    .unwrap();
+    let settings = FileSettings { enabled: true, source_dirs: vec!["apps/desktop/build".into()], ..Default::default() };
+    let local = FileStore::new(root.path(), settings.clone()).unwrap();
+    let remote = LocalPeer(FileStore::new(peer.path(), settings).unwrap());
+    local.write("apps/desktop/build/source.rs", Some(b"source"), None).unwrap();
+    let mut session = Session::open_pair(local.clone(), pair.binding().unwrap()).unwrap();
+    session.bind_peer(digest(b"verified peer")).unwrap();
+    crate::filesystem::watcher::cache_policy(&pair, &local).unwrap();
+    assert_eq!(session.round(&remote).await.unwrap().status, Status::Synced);
+    drop(session);
+    let resumed = crate::filesystem::watcher::local_files(&pair).unwrap();
+    let mut session = Session::open_pair(resumed.clone(), pair.binding().unwrap()).unwrap();
+    assert_eq!(session.report().status, Status::Synced);
+    assert!(session.bind_peer(digest(b"different peer")).is_err());
+    resumed.write("apps/desktop/build/source.rs", Some(b"updated"), Some(&digest(b"source"))).unwrap();
+    assert_eq!(session.round(&remote).await.unwrap().status, Status::Synced);
+    assert_eq!(remote.0.read("apps/desktop/build/source.rs").unwrap(), b"updated");
+    let name = format!("policy-{}.json", digest(pair.binding().unwrap().as_bytes()));
+    local.save_metadata(&name, b"corrupt").unwrap();
+    assert!(crate::filesystem::watcher::local_files(&pair).is_err());
+    assert_eq!(fs::read(root.path().join("apps/desktop/build/source.rs")).unwrap(), b"updated");
 
 }
 

@@ -33,7 +33,7 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
         .spawn()
         .unwrap();
     let peer = "a".repeat(64);
-    let remote = Remote {
+    let mut remote = Remote {
 
         client,
         notifications,
@@ -51,6 +51,7 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
         expected_device: None,
         git_executable: None,
         git_baseline_name: String::new(),
+        initial_git_handoff: None,
         rpc_latency_ms: AtomicU64::new(0),
 
     };
@@ -95,6 +96,10 @@ async fn forwarded_command_waits_for_its_own_peer_checkpoint( ) {
         assert_eq!(notification["process_id"], result["process_id"]);
 
     }
+    // reconnect의 느린 identity 조회는 아직 읽지 않은 generation 0으로 heartbeat를 보내면 안 돼.
+    *remote.last_heartbeat.lock().unwrap() = std::time::Instant::now() - Duration::from_secs(3);
+    assert!(remote.identity().await.is_ok());
+    assert_eq!(coordinator.status_peer("sample", &files, Some(&peer)).unwrap()["confirmed_generation"], 1);
     let invalid = remote
         .forward("start_process", json!({"bad_argument":true}).as_object().unwrap().clone(), CancellationToken::new())
         .await

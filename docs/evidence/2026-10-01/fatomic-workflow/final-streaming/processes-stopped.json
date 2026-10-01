@@ -1,0 +1,68 @@
+{
+  "processes": [
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7K0qMu",
+      "command": "check",
+      "process_id": "1790806468337521600-1",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-jbhv75",
+      "command": "build",
+      "process_id": "1790806470359207300-2",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-bKijC0",
+      "command": "test",
+      "process_id": "1790806472446416600-3",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": null,
+      "command": "run",
+      "process_id": "1790806474401434200-4",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": false,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-b6zzHS",
+      "command": "stream",
+      "process_id": "1790806510889367900-5",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-ZJmDoc",
+      "command": "stream",
+      "process_id": "1790806515038431600-6",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-7StgRe",
+      "command": "build",
+      "process_id": "1790806515041134000-7",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    },
+    {
+      "artifact_root": "\\\\?\\D:\\w7bridge\\fatomic-2158\\fixture\\.w7bridge\\build-Zlp0qG",
+      "command": "stream",
+      "process_id": "1790806580990763200-8",
+      "revision_at_start": "269d3a7695cfd0b716f38be2860372ce6124cde010c874df3e4045dc85d6617c",
+      "source_snapshot": true,
+      "status": "stopped"
+    }
+  ]
+}

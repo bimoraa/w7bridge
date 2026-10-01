@@ -9,6 +9,25 @@ use std::{ffi::OsString, path::PathBuf};
 pub async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    run_args(args).await
+
+}
+
+/** 로그인 session에서 console 없이 같은 host runtime을 실행해. */
+pub async fn run_desktop() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
+    let mut args: Vec<_> = std::env::args_os().skip(1).collect();
+    if !matches!(args.as_slice(), [flag] if flag == "--version" || flag == "-V") {
+
+        args.insert(0, OsString::from("desktop-host"));
+
+    }
+    run_args(args).await
+
+}
+
+async fn run_args(args: Vec<OsString>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
     if args.first().is_some_and(|arg| arg == "hub") {
 
         if matches!(&args[1..],[flag] if flag=="--help"||flag=="-h") {
@@ -53,6 +72,27 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if args.first().is_some_and(|arg| arg == "service") {
 
         return run_service(&args[1..]);
+
+    }
+    if args.first().is_some_and(|arg| arg == "desktop-host") {
+
+        if matches!(&args[1..],[flag] if flag == "--help" || flag == "-h") {
+
+            println!(
+                "사용법: w7bridge desktop-host --config <Windows 설정>\n로그인 session, service.desktop = true와 같은 allowed_sid가 필요합니다"
+            );
+            return Ok(());
+
+        }
+        #[cfg(windows)]
+        if let [flag, path] = &args[1..]
+            && flag == "--config"
+        {
+
+            return crate::server::runtime::service::desktop_host(&PathBuf::from(path)).await;
+
+        }
+        return Err("desktop-host는 Windows 로그인 session에서 --config로 실행하세요".into());
 
     }
     if matches!(args.as_slice(), [flag] if flag == "relay") {

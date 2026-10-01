@@ -1,0 +1,10 @@
+{
+    "before":  [
+                   {
+                       "ProcessId":  34412,
+                       "SessionId":  1
+                   }
+               ],
+    "remaining_owned_hosts":  0,
+    "task_state":  "Ready"
+}

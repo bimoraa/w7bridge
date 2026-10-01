@@ -10,6 +10,28 @@ use crate::{
 use serde_json::json;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
+
+pub(crate) fn local_files( pair: &Pair, ) -> Result<FileStore,Failure> {
+
+    let files = FileStore::new(&pair.local_root, FileSettings { enabled: true, ..Default::default() })?;
+    let name = format!("policy-{}.json", crate::filesystem::digest(pair.binding()?.as_bytes()));
+    match files.load_metadata(&name)? {
+
+        Some(bytes) => Ok(files.with_settings(serde_json::from_slice(&bytes)?)?),
+        None => Ok(files),
+
+    }
+
+}
+
+pub(crate) fn cache_policy( pair: &Pair, files: &FileStore, ) -> Result<(),Failure> {
+
+    let name = format!("policy-{}.json", crate::filesystem::digest(pair.binding()?.as_bytes()));
+    files.save_metadata(&name, &serde_json::to_vec(files.settings())?)?;
+    Ok(())
+
+}
+
 pub(crate) async fn watch(
     pair: Pair,
     interval: u64,
@@ -18,7 +40,7 @@ pub(crate) async fn watch(
     shutdown: CancellationToken,
 ) -> Result<(), Failure> {
 
-    let files = FileStore::new(&pair.local_root, FileSettings { enabled: true, ..Default::default() })?;
+    let files = local_files(&pair)?;
     let binding = pair.binding()?;
     let lock_name = format!("sync-{}.lock", crate::filesystem::digest(binding.as_bytes()));
     if status {
@@ -93,6 +115,7 @@ pub(crate) async fn watch(
                                         return Err(error.into());
 
                                     }
+                                    cache_policy(&pair, replacement.files())?;
                                     session = replacement;
                                     remote = Some(peer);
 

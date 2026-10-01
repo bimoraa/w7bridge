@@ -75,6 +75,11 @@ impl Config {
         }
 
         let limits = &config.execution;
+        if config.projects.iter().any(|project| !(1..=120).contains(&project.sync_timeout_seconds)) {
+
+            return Err(ConfigError::Invalid("sync_timeout_seconds는 1..=120이어야 합니다"));
+
+        }
 
         if !(1..=3600).contains(&limits.timeout_seconds) {
 
@@ -103,6 +108,11 @@ impl Config {
         }) {
 
             return Err(ConfigError::Invalid("service.allowed_sid는 숫자 Windows SID여야 합니다"));
+
+        }
+        if config.service.desktop && config.service.allowed_sid.is_none() {
+
+            return Err(ConfigError::Invalid("desktop host에는 service.allowed_sid가 필요합니다"));
 
         }
         Ok(Self {

@@ -6,6 +6,11 @@ rust-version = "1.88"
 description = "Windows의 등록된 프로젝트 명령을 실행하는 MCP 서버"
 license = "MIT"
 repository = "https://github.com/bimoraa/w7bridge"
+default-run = "w7bridge"
+
+[[bin]]
+name = "w7bridge-desktop"
+path = "src/desktop_main.rs"
 
 [workspace]
 members = ["xtask"]
@@ -34,4 +39,4 @@ tempfile = "3"
 
 [target.'cfg(windows)'.dependencies]
 windows-service = "0.8.1"
-windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Threading", "Win32_System_RemoteDesktop"] }

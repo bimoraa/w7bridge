@@ -5,6 +5,7 @@ use crate::{filesystem::FileStore, git::Repository, sync::SyncError};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::collections::BTreeSet;
 
 #[derive(Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -31,10 +32,18 @@ impl Remote {
     pub(super) async fn git_handoff( &self, files: &FileStore, ) -> Result<bool,SyncError> {
 
         let executable = self.git_executable.as_ref().ok_or(SyncError::State)?.clone();
-        let repository = Repository::new(files.clone(), executable);
         let cancellation = tokio_util::sync::CancellationToken::new();
-        let left = repository.status(cancellation.clone()).await.map_err(SyncError::Git)?;
         let right = self.call("git_status", json!({})).await?;
+        let local_only_paths = right
+            .get("local_only_paths")
+            .map(|value| serde_json::from_value(value.clone()))
+            .transpose()
+            .map_err(|_| SyncError::Peer)?
+            .unwrap_or_default();
+        let repository = Repository::new(files.clone(), executable)
+            .with_local_only_paths(local_only_paths)
+            .map_err(SyncError::Git)?;
+        let left = repository.status(cancellation.clone()).await.map_err(SyncError::Git)?;
         let left_hash = optional_hash(&left)?;
         let right_hash = optional_hash(&right)?;
         let mut baseline: Baseline = match files.load_metadata(&self.git_baseline_name)? {
@@ -74,6 +83,11 @@ impl Remote {
 
                 (Some(_), None) => true,
                 (None, Some(_)) => false,
+                (Some(_), Some(_)) if self.initial_git_handoff.is_some() => {
+
+                    bootstrap(self.initial_git_handoff.as_ref().ok_or(SyncError::State)?, &left, &right)?
+
+                }
                 _ => return Ok(false),
 
             }
@@ -93,13 +107,40 @@ impl Remote {
         };
         let (source, expected) = if remote_target { (&left_hash, &right_hash) } else { (&right_hash, &left_hash) };
         let Some(source) = source.as_ref() else { return Ok(false) };
+        let target_state = if remote_target { &right["state"] } else { &left["state"] };
+        let known_heads: BTreeSet<String> = target_state["head"]
+            .as_str()
+            .into_iter()
+            .chain(
+                target_state["refs"].as_object().into_iter().flat_map(|refs| refs.values().filter_map(Value::as_str)),
+            )
+            .map(str::to_owned)
+            .collect();
+        let known_heads: Vec<String> = known_heads.into_iter().collect();
+        let known_index: BTreeSet<String> = target_state["index"]
+            .as_array()
+            .into_iter()
+            .flat_map(|entries| entries.iter().filter_map(|entry| entry["oid"].as_str()))
+            .map(str::to_owned)
+            .collect();
+        let known_index: Vec<String> = known_index.into_iter().collect();
         let description = if remote_target {
 
-            repository.export(source, cancellation.clone()).await.map_err(SyncError::Git)?
+            repository
+                .export_incremental(source, &known_heads, &known_index, cancellation.clone())
+                .await
+                .map_err(SyncError::Git)?
 
         } else {
 
-            self.call("git_export", json!({"expected_state":source})).await?
+            let mut arguments = json!({"expected_state":source});
+            if right["incremental_export"] == true {
+
+                arguments["known_heads"] = json!(known_heads);
+                arguments["known_index"] = json!(known_index);
+
+            }
+            self.call("git_export", arguments).await?
 
         };
         let sha256 = description["sha256"].as_str().ok_or(SyncError::Peer)?;
@@ -195,6 +236,33 @@ impl Remote {
     }
 
 }
+
+fn bootstrap( settings: &crate::config::GitBootstrap, local: &Value, remote: &Value, ) -> Result<bool,SyncError> {
+
+    if optional_hash(local)?.as_deref() != Some(&settings.expected_local_state)
+        || optional_hash(remote)?.as_deref() != Some(&settings.expected_remote_state)
+    {
+
+        return Err(SyncError::Git("검토한 initial Git 상태가 변경되었습니다. 원본을 보존하고 재검토하세요".into()));
+
+    }
+    if !local["state"]["head"].is_string()
+        || local["state"]["head"] != remote["state"]["head"]
+        || local["state"]["index"] != remote["state"]["index"]
+    {
+
+        return Err(SyncError::Git(
+            "기존 양쪽의 HEAD와 index가 같을 때만 initial Git 인계를 승인할 수 있습니다".into(),
+        ));
+
+    }
+    Ok(matches!(settings.source, crate::config::GitSource::Local))
+
+}
+
+#[cfg(test)]
+#[path = "../../tests/unit/git_bootstrap.rs"]
+mod tests;
 
 fn optional_hash( status: &Value, ) -> Result<Option<String>,SyncError> {
 

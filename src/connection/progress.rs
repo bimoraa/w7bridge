@@ -22,8 +22,16 @@ impl Default for ProgressClient {
 
 impl ClientHandler for ProgressClient {
 
-    async fn on_progress( &self, params: ProgressNotificationParam, _context: NotificationContext<RoleClient>, ) {
+    async fn on_progress( &self, mut params: ProgressNotificationParam, context: NotificationContext<RoleClient>, ) {
 
+        // SDK가 protocol metadata를 notification extension으로 옮겨서 전달해.
+        let meta = params.meta.get_or_insert_with(Default::default);
+        if let Some(extensions) = context.extensions.get::<rmcp::model::NotificationMetaObject>() {
+
+            meta.extend(extensions.clone());
+
+        }
+        meta.extend(context.meta);
         let _ = self.notifications.send(params);
 
     }

@@ -49,6 +49,18 @@ impl Pair {
 
     pub(crate) fn options(&self) -> Result<Options, Failure> {
 
+        if let Some(bootstrap) = &self.initial_git_handoff
+            && (self.git_executable.is_none()
+                || [&bootstrap.expected_local_state, &bootstrap.expected_remote_state].into_iter().any(|hash| {
+
+                    hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+
+                }))
+        {
+
+            return Err("initial Git 인계에는 승인한 executable과 양쪽 SHA-256 state가 필요합니다".into());
+
+        }
         let mut args = vec![OsString::from("--host"), self.host.clone().into()];
         for (flag, value) in
             [("--executable", &self.executable), ("--config", &self.config), ("--identity", &self.identity)]
@@ -100,6 +112,7 @@ pub(crate) struct Remote {
     expected_device: Option<String>,
     pub(super) git_executable: Option<std::path::PathBuf>,
     pub(super) git_baseline_name: String,
+    pub(super) initial_git_handoff: Option<crate::config::GitBootstrap>,
     rpc_latency_ms: std::sync::atomic::AtomicU64,
 
 }
@@ -246,6 +259,7 @@ impl Remote {
             expected_device: pair.expected_device_id.clone(),
             git_executable: pair.git_executable.clone(),
             git_baseline_name: format!("git-pair-{}.json", crate::filesystem::digest(pair.binding()?.as_bytes())),
+            initial_git_handoff: pair.initial_git_handoff.clone(),
             rpc_latency_ms: std::sync::atomic::AtomicU64::new(0),
 
         };
@@ -347,7 +361,15 @@ impl Remote {
                 return Err(SyncError::File(crate::FileError::Io(std::io::Error::from(std::io::ErrorKind::NotFound))));
 
             }
-            return Err(SyncError::Peer);
+            let message = result
+                .structured_content
+                .as_ref()
+                .and_then(|value| value["message"].as_str())
+                .unwrap_or("peer가 요청을 거부했습니다")
+                .chars()
+                .take(512)
+                .collect::<String>();
+            return Err(SyncError::PeerRequest(format!("{name}: {message}")));
 
         }
         result.structured_content.ok_or(SyncError::Peer)
@@ -579,7 +601,7 @@ impl Remote {
     pub(crate) async fn identity(&mut self) -> Result<(crate::filesystem::FileSettings, String), SyncError> {
 
         let result =
-            self.call("list_files", if self.chunk_sync { json!({"protocol_version":2}) } else { json!({}) }).await?;
+            self.request("list_files", if self.chunk_sync { json!({"protocol_version":2}) } else { json!({}) }).await?;
         if self.chunk_sync && result["requires_sync"] != true {
 
             return Err(SyncError::PeerConfig("pairing 대상에는 requires_sync = true가 필요합니다"));

@@ -27,6 +27,7 @@ max_depth = 3
 id = "sample"
 root = 'D:\Projects\sample'
 requires_sync = true
+sync_timeout_seconds = 120
 
 [projects.files]
 enabled = true
@@ -80,6 +81,10 @@ Codex의 MCP command를 Mac의 w7bridge executable, args를 `hub --config /absol
 
 여러 Windows는 `[[pairs]]`를 추가한다. 같은 Mac root도 서로 다른 Windows에 연결할 수 있으며 baseline과 Git handoff state는 pair별로 분리한다. 여러 Mac이 한 Windows project를 사용하는 경우 새 peer protocol이 각 Mac의 checkpoint와 build 요청을 구분한다. 다른 Mac의 checkpoint는 선택한 Mac의 fresh 요청을 확인하지 못한다. 활성 paired peer의 conflict는 build를 막는다. peer ID를 선택하지 않은 직접 client는 여러 peer일 때 명령을 거부하므로 hub의 device/project ID를 사용한다.
 
+큰 repository는 owner가 project의 `sync_timeout_seconds`를 1–120초로 지정할 수 있다. 기본값은 기존 30초다. process 실행 timeout과 구분하며 MCP client가 이 owner 한도를 변경하지 않는다. reconnect의 identity 조회는 현재 generation을 읽기 전에 heartbeat를 보내지 않는다. file 요청 실패는 tool 이름과 제한된 peer 오류를 함께 기록한다.
+
+파일 목록·읽기와 build snapshot은 shared access lock을 사용한다. 같은 source를 읽는 watcher와 snapshot이 서로 Busy를 만들지 않는다. snapshot 복사 동안 bridge의 파일 교체는 exclusive lock으로 막고 복사 전·후 manifest도 비교한다. 외부 editor는 bridge lock을 따르지 않으므로 hash가 달라지면 명령을 시작하지 않는다.
+
 ## MCP 호출 순서
 
 ```json
@@ -111,7 +116,7 @@ Codex의 MCP command를 Mac의 w7bridge executable, args를 `hub --config /absol
 
 한쪽에만 repository가 있으면 빈 쪽에 import한다. 이후 baseline에서 한쪽만 변경됐으면 반대쪽에 적용한다. 양쪽 Git state가 달라졌으면 conflict로 build를 중단한다. apply 직전 대상 Git state와 source manifest를 다시 확인하고 기존 metadata를 recovery backup으로 보존한다. Git backup은 자동 삭제하지 않는다. staged/unstaged/untracked와 rename/delete는 file 상태와 index를 함께 전달한다.
 
-기존 linked worktree의 metadata 교체, submodule/symlink index, 공유 정책에서 제외된 tracked 파일과 활성 merge/rebase는 fail closed다. 기존 linked worktree를 임의로 독립 repo로 바꾸지 않는다. Git archive 한도는 64 MiB, 로컬 metadata recovery 복사는 256 MiB/10000 entry/depth 32다. 지원 범위 밖 project는 원본을 보존하고 오류를 해결하기 전 build를 중단한다.
+기존 linked worktree나 다른 worktree를 소유한 main repository의 metadata 교체, submodule/symlink index, 승인하지 않은 제외된 tracked 파일과 활성 merge/rebase는 fail closed다. 기존 linked worktree를 임의로 독립 repo로 바꾸지 않는다. Git archive 한도는 64 MiB, 로컬 metadata recovery 복사는 256 MiB/10000 entry/depth 32다. 지원 범위 밖 project는 원본을 보존하고 오류를 해결하기 전 build를 중단한다.
 
 ## 서명된 automatic update
 
@@ -135,3 +140,25 @@ w7bridge update install --config /absolute/path/update.toml
 Windows helper는 현재 사용자의 Limited/로그인 task다. service binary를 갱신하려면 해당 계정이 설치 디렉터리 쓰기와 SCM start/stop 권한을 가져야 한다. 권한이 없으면 자동 update를 실패로 보고하며 더 높은 권한으로 우회하지 않는다. service는 기존 SCM 자동 시작을 사용하지만 updater는 로그인 전 실행을 보장하지 않는다. macOS helper는 사용자 LaunchAgent다. 설치 후 같은 trust key와 URL을 계속 사용한다. release hosting과 signing key 배포는 owner가 준비해야 하며 기본 public update channel은 없다.
 
 검증 source와 현재 evidence 경계는 [기능 수용 기준](feature_acceptance.md)에 기록한다.
+
+## source 이름과 output 이름이 겹치는 경우
+
+`source_dirs = ["apps/desktop/build", "apps/desktop/tests/unit/engine/target"]`는 owner가 검토한 source 디렉터리만 공통 제외 규칙에서 다시 연다. 목록·읽기·쓰기·삭제·snapshot과 sync가 같은 정책을 사용한다. `.git`, node_modules, secret 파일과 실행 output 확장자는 계속 차단한다. target은 정확한 승인 디렉터리만 열며 그 안의 또 다른 target은 열지 않는다. custom `exclude_dirs`를 우회하지 않는다.
+
+tracked output의 index가 필요한 경우 `[projects.git]`의 `local_only_paths`에 정확한 상대 파일 경로를 지정한다. 최대 256개며 secret/bridge metadata는 거부한다. Git object와 index만 유지하고 working file은 공유하지 않는다. 양쪽 장비의 device-local index flag도 보존한다. raw `.git`와 `.w7bridge`는 Syncthing 등 다른 sync 엔진에서 제외해야 한다. 같은 working root의 파일을 두 엔진이 동시에 쓰게 하지 않는다.
+
+## 검토한 초기 Git 인계와 큰 repository
+
+기존 양쪽 repo가 다른 branch를 가진 경우 기본 initial sync는 conflict다. owner가 두 state를 검토한 경우에만 pairing의 `[pairs.initial_git_handoff]`에 `source = "local"`, `expected_local_state`, `expected_remote_state`를 설정한다. 두 hash는 현재 `git_status`의 SHA-256과 같아야 하고 HEAD와 index도 같아야 한다. 이후 변경은 정상 baseline/CAS 규칙으로 처리한다. 검토 이후 상태가 바뀌면 초기 승인을 다시 사용하지 않는다.
+
+큰 history는 owner가 독립 mirror에 검증한 local bundle을 먼저 seed할 수 있다. 기존 shared-worktree repo를 clone --shared나 metadata 복사로 연결하지 않는다. mirror의 object와 index를 준비한 뒤 새 export는 대상이 가진 commit/index OID를 제외한다. 신규 object와 branch/refs/index만 archive로 보내고 대상은 bundle, blob, fsck와 전체 hash를 검증한 후 apply한다. archive 한도는 여전히 64 MiB다. export cache는 내용 hash별로 분리하고 최신 4개만 보관한다. 오래된 export가 제거됐으면 source에서 재준비하며 대상에 도착한 chunk는 기존 transfer 규칙으로 재사용한다.
+
+## 로그인 desktop host
+
+GUI command를 bridge의 Job Object 아래에서 관리하려면 Windows owner 설정에 `[service] desktop = true`와 실제 `allowed_sid`를 지정하고 `w7bridge-desktop.exe --config <owner TOML>`을 로그인 계정의 Limited Task Scheduler task에서 직접 실행한다. 별도 console 없는 진입점이 기존 host runtime을 호출한다. PowerShell/Python wrapper를 task action으로 쓰면 task 중단 후 host가 남을 수 있으므로 직접 binary를 등록한다. console 진단은 `w7bridge desktop-host --config <owner TOML>`로 실행한다. SSH stdio와 relay는 기존 `w7bridge.exe`를 사용한다. host는 실제 token SID와 nonzero session을 확인한다. owner SID가 다르거나 session 0이면 실행을 거부한다. SCM mode와 혼용하지 않으며 동일 named pipe의 기존 host가 있으면 시작을 거부한다.
+
+로그인 trigger, 실패 restart와 무제한 host 실행 시간을 owner task에 설정한다. 로그인 전 실행은 보장하지 않는다. SSH relay가 종료돼도 같은 host의 process handle과 log는 유지되며 cancel은 관리 중인 process tree를 종료한다. host가 crash/restart하면 이전 process/log는 복원하지 않는다. desktop capture는 별도 opt-in이며 실제 실행 revision과 exit code의 증거를 대체하지 않는다.
+
+`xtask/scripts/native_cargo_windows.ps1`은 owner가 고정한 Cargo/manifest/Bun 경로로 Fatomic의 named command를 실행하는 helper다. 필요한 volume의 free space를 repo floor와 headroom에 비교하고 부족하면 Cargo를 시작하지 않는다. run은 owner가 배치한 로컬 secret config와 dependency 설치가 필요하며 이 파일은 source sync로 배포하지 않는다.
+
+pair별로 검증한 파일 정책을 `.w7bridge/policy-<pair hash>.json`에 원자적으로 저장한다. watcher 재시작도 같은 source_dirs/exclude_dirs로 기존 journal을 검사하며 baseline을 초기화하지 않는다. 손상된 cache나 변경된 peer identity/policy는 오류로 중단한다. 정책 cache는 owner 승인이나 peer 검증을 대체하지 않는다.

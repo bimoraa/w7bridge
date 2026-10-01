@@ -215,6 +215,11 @@ pub(crate) mod service {
         let path = config_path.get().ok_or("service config 경로가 없습니다")?;
         failure_stage.store(3, std::sync::atomic::Ordering::Relaxed);
         let config = Config::load(path).map_err(|error| format!("설정 읽기: {error}"))?;
+        if config.service.desktop {
+
+            return Err("desktop 설정은 SCM host에서 실행하지 않습니다".into());
+
+        }
         let sid = config.service.allowed_sid.clone().ok_or("service.allowed_sid를 설정하세요")?;
         failure_stage.store(4, std::sync::atomic::Ordering::Relaxed);
         let bridge = Bridge::new(config, shutdown.clone()).map_err(|error| format!("registry 검증: {error}"))?;
@@ -226,7 +231,7 @@ pub(crate) mod service {
             let listener = pipe(&sid, true).map_err(|error| format!("pipe 생성: {error}"))?;
             handle.set_service_status(status(ServiceState::Running, 0))?;
             failure_stage.store(7, std::sync::atomic::Ordering::Relaxed);
-            let result = listen(bridge.clone(), sid, listener, shutdown.clone()).await;
+            let result = listen(bridge.clone(), sid, listener, shutdown.clone(), false).await;
             shutdown.cancel();
             let _ = handle.set_service_status(status(ServiceState::StopPending, 0));
             bridge.shutdown().await;
@@ -238,12 +243,19 @@ pub(crate) mod service {
 
     fn pipe(sid: &str, first: bool) -> io::Result<NamedPipeServer> {
 
+        pipe_for(sid, first, false)
+
+    }
+
+    fn pipe_for( sid: &str, first: bool, desktop: bool, ) -> io::Result<NamedPipeServer> {
+
         use windows_sys::Win32::{
             Foundation::LocalFree,
             Security::{Authorization::ConvertStringSecurityDescriptorToSecurityDescriptorW, SECURITY_ATTRIBUTES},
         };
-        // client에는 FILE_CREATE_PIPE_INSTANCE 권한 없이 data 읽기/쓰기만 줘.
-        let sddl: Vec<u16> = format!("D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;LS)(A;;0x0012019b;;;{sid})")
+        // SCM client에는 data 권한만 줘. desktop mode에서는 실제 host owner가 다음 listener도 만들어.
+        let owner_access = if desktop { "GA" } else { "0x0012019b" };
+        let sddl: Vec<u16> = format!("D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;LS)(A;;{owner_access};;;{sid})")
             .encode_utf16()
             .chain(Some(0))
             .collect();
@@ -294,6 +306,7 @@ pub(crate) mod service {
         sid: String,
         mut listener: NamedPipeServer,
         shutdown: CancellationToken,
+        desktop: bool,
     ) -> Result<(), Failure> {
 
         let slots = std::sync::Arc::new(tokio::sync::Semaphore::new(16));
@@ -313,7 +326,7 @@ pub(crate) mod service {
                 break Err(error.into());
 
             }
-            let next = match pipe(&sid, false) {
+            let next = match pipe_for(&sid, false, desktop) {
 
                 Ok(next) => next,
                 Err(error) => break Err(error.into()),
@@ -349,6 +362,44 @@ pub(crate) mod service {
         shutdown.cancel();
         while tasks.join_next().await.is_some() {}
         outcome
+
+    }
+
+    /** 명시적인 owner opt-in으로 로그인 session에서 같은 persistent pipe host를 실행한다. SCM으로 fallback하지 않는다. */
+    pub async fn desktop_host( path: &Path, ) -> Result<(),Failure> {
+
+        let config = Config::load(path)?;
+        if !config.service.desktop {
+
+            return Err("desktop host에는 service.desktop = true가 필요합니다".into());
+
+        }
+        let sid = crate::platform::desktop_owner()?;
+        if config.service.allowed_sid.as_deref() != Some(&sid) {
+
+            return Err("desktop host의 실제 계정과 service.allowed_sid가 다릅니다".into());
+
+        }
+        let shutdown = CancellationToken::new();
+        let bridge = Bridge::new(config, shutdown.clone())?;
+        let listener = pipe_for(&sid, true, true)?;
+        let serving = listen(bridge.clone(), sid, listener, shutdown.clone(), true);
+        tokio::pin!(serving);
+        let result = tokio::select! {
+            result = &mut serving => result,
+            signal = tokio::signal::ctrl_c() => {
+                match signal {
+                    Ok(()) => { shutdown.cancel(); serving.await },
+                    Err(error) => {
+                        eprintln!("Ctrl-C listener를 사용할 수 없어 host 종료를 기다립니다: {error}");
+                        serving.await
+                    },
+                }
+            },
+        };
+        shutdown.cancel();
+        bridge.shutdown().await;
+        result
 
     }
 
@@ -447,6 +498,11 @@ pub(crate) mod service {
 
         let path = path.canonicalize()?;
         let config = Config::load(&path)?;
+        if config.service.desktop {
+
+            return Err("desktop 설정은 SCM service가 아니라 로그인 task에서 실행하세요".into());
+
+        }
         if config.service.allowed_sid.is_none() {
 
             return Err("service.allowed_sid를 먼저 설정하세요".into());

@@ -13,6 +13,7 @@ fn project(root: &Path) -> ProjectDefinition {
         root: root.to_owned(),
         files: Default::default(),
         requires_sync: false,
+        sync_timeout_seconds: 30,
         presets: None,
         git: None,
         commands: BTreeMap::from([(
@@ -44,6 +45,17 @@ fn registry_rejects_duplicates_bad_names_relative_paths_and_unknown_commands() {
     assert!(matches!(Policy::new(vec![invalid]), Err(PolicyError::Name)));
     let registry = Policy::new(vec![project(root.path())]).unwrap();
     assert!(matches!(registry.resolve("sample", "missing"), Err(PolicyError::Unknown)));
+    assert_eq!(registry.sync_timeout("sample").unwrap(), 30);
+    for seconds in [0, 121] {
+
+        let mut invalid = project(root.path());
+        invalid.sync_timeout_seconds = seconds;
+        assert!(matches!(Policy::new(vec![invalid]), Err(PolicyError::Command)));
+
+    }
+    let mut configured = project(root.path());
+    configured.sync_timeout_seconds = 120;
+    assert_eq!(Policy::new(vec![configured]).unwrap().sync_timeout("sample").unwrap(), 120);
 
 }
 

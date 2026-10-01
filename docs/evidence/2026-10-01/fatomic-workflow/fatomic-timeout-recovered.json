@@ -1,0 +1,24 @@
+{
+  "command": "check",
+  "events": [],
+  "next_cursor": 0,
+  "process_id": "1790805809374809200-1",
+  "result": {
+    "artifact_root": "\\\\?\\D:\\w7bridge\\projects\\fatomic-mac\\.w7bridge\\build-HpyWxg",
+    "exit_code": null,
+    "revision_at_completion": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+    "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+    "revision_matches_at_completion": true,
+    "revision_verified": true,
+    "source_snapshot": true,
+    "status": "cancelled",
+    "stderr": "",
+    "stderr_truncated": false,
+    "stdout": "",
+    "stdout_truncated": false,
+    "success": false
+  },
+  "revision_at_start": "31df90ebc1392c4c55d8e37763a771023069378fe8972a078538ae58b0db7831",
+  "status": "stopped",
+  "truncated": false
+}

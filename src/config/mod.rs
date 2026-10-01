@@ -4,7 +4,8 @@ mod loader;
 mod model;
 pub(crate) mod paths;
 pub(crate) use model::{
-    CodexSettings, CommandDefinition, DiscoverySettings, ExecutionLimits, Pair, ProjectDefinition, SyncSettings,
+    CodexSettings, CommandDefinition, DiscoverySettings, ExecutionLimits, GitBootstrap, GitSource, Pair,
+    ProjectDefinition, SyncSettings,
 };
 pub use model::{Config, FileSettings};
 

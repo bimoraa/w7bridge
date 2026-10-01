@@ -1,0 +1,13 @@
+{
+    "state":  "Running",
+    "result":  267009,
+    "host":  [
+                 {
+                     "ProcessId":  34412,
+                     "SessionId":  1,
+                     "CommandLine":  "\"D:/w7bridge/fatomic-2158/w7bridge-desktop.exe\" --config D:/w7bridge/fatomic-2158/owner.toml"
+                 }
+             ],
+    "original_branch":  "codex/bladeball",
+    "mirror_branch":  "codex/cross-machine-dev"
+}
