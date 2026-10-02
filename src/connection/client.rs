@@ -48,7 +48,9 @@ pub(crate) async fn run(args: &[OsString]) -> Result<(), ConnectError> {
     if !options.check {
 
         // 연결을 확인한 뒤에만 client 설정에 등록해. 원격 명령 실행 권한은 추가하지 않아.
-        let status = Command::new("codex")
+        let mut command = Command::new("codex");
+        crate::platform::configure_background(&mut command);
+        let status = command
             .args(["mcp", "add", &options.name, "--", "ssh"])
             .args(options.ssh_args())
             .stdin(Stdio::null())
@@ -70,7 +72,9 @@ pub(crate) async fn run(args: &[OsString]) -> Result<(), ConnectError> {
 
 async fn ensure_available(name: &str) -> Result<(), ConnectError> {
 
-    let output = Command::new("codex")
+    let mut command = Command::new("codex");
+    crate::platform::configure_background(&mut command);
+    let output = command
         .args(["mcp", "list", "--json"])
         .stdin(Stdio::null())
         .kill_on_drop(true)

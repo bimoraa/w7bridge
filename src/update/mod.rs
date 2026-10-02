@@ -718,9 +718,13 @@ fn install_schedule( config: &Path, helper: &Path, ) -> Result<(),Failure> {
     #[cfg(windows)]
     {
 
+        use std::os::windows::process::CommandExt;
+        use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
+
         let command = format!("\"{}\" update --config \"{}\"", helper.display(), config.display());
         let username = format!("{}\\{}", std::env::var("USERDOMAIN")?, std::env::var("USERNAME")?);
         let output = std::process::Command::new("schtasks.exe")
+            .creation_flags(CREATE_NO_WINDOW)
             .args([
                 "/Create",
                 "/TN",
@@ -741,7 +745,12 @@ fn install_schedule( config: &Path, helper: &Path, ) -> Result<(),Failure> {
             return Err("현재 사용자 updater task를 설치할 수 없습니다. 기존 task는 보존합니다".into());
 
         }
-        if !std::process::Command::new("schtasks.exe").args(["/Run", "/TN", "w7bridge-update"]).status()?.success() {
+        if !std::process::Command::new("schtasks.exe")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(["/Run", "/TN", "w7bridge-update"])
+            .status()?
+            .success()
+        {
 
             return Err("updater task 시작을 확인할 수 없습니다".into());
 

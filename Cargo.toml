@@ -21,7 +21,7 @@ resolver = "3"
 base64 = "0.22"
 ed25519-dalek = "2.2"
 fs2 = "0.4"
-process-wrap = { version = "10.0.1", default-features = false, features = ["tokio1", "job-object", "kill-on-drop", "process-group"] }
+process-wrap = { version = "10.0.1", default-features = false, features = ["tokio1", "creation-flags", "job-object", "kill-on-drop", "process-group"] }
 rmcp = { version = "3.5.0", default-features = false, features = ["client", "server", "transport-io"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 rusqlite = { version = "0.40.2", default-features = false, features = ["bundled"] }
@@ -39,4 +39,4 @@ tempfile = "3"
 
 [target.'cfg(windows)'.dependencies]
 windows-service = "0.8.1"
-windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Threading", "Win32_System_RemoteDesktop"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_Threading", "Win32_System_RemoteDesktop"] }

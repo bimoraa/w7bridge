@@ -18,6 +18,7 @@ use tokio::{
 };
 pub(super) async fn probe(mut command: Command, limit: Duration) -> Result<(), ConnectError> {
 
+    crate::platform::configure_background(&mut command);
     let mut child = command
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -204,7 +205,9 @@ impl Remote {
 
     pub(crate) async fn connect(pair: &Pair, shutdown: tokio_util::sync::CancellationToken) -> Result<Self, Failure> {
 
-        let mut child = Command::new("ssh")
+        let mut command = Command::new("ssh");
+        crate::platform::configure_background(&mut command);
+        let mut child = command
             .args(pair.options()?.ssh_args())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

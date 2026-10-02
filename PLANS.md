@@ -106,3 +106,12 @@ context에는 이어서 작업할 사람이 필요한 결정, 현재 상태, 남
 - Windows MSVC 전체 suite와 memory MCP의 실제 Windows 호출은 이번 검증에 포함하지 못했다. native launcher가 Cargo를 실행하기 전에 종료했다. 현재 Codex 채팅의 기존 MCP transport는 닫혀 있어 native tool 재호출은 `Transport closed`였다. 새 installed binary에 연결하려면 Codex MCP를 재연결해야 한다. 실제 Rust SDK MCP 검증과 현재 Codex tool 연결 상태를 구분한다.
 - 최종 source와 Git에서 제외된 test·lockfile은 위 managed worktree에 보존했다. 이 작업에서 commit/push하지 않았다.
 - 사용자가 주 repository에서 source가 보이지 않는 문제를 확인한 뒤 `/Users/hillaryabigail/Documents/ChatGPT/w7bridge`를 `codex/source-structure`로 되돌렸다. managed worktree의 최종 변경과 제외된 test·lockfile도 주 repository에 반영했다. 덮어쓴 기존 test·lockfile은 `/tmp/w7bridge-repo-restore-backup-01a0f14b`에 보존했고 원본 managed worktree도 유지한다.
+
+## Windows console 창 억제 — 2026-10-02
+
+- 실제 실행 중인 host는 `D:/w7bridge/fatomic-2158/w7bridge-desktop.exe`다. 주 checkout의 미완료 sync 작업을 보존하기 위해 `8136b64` 기준의 별도 managed worktree와 `codex/hide-windows-console` branch에서 수정했다.
+- Windows managed child는 `CreationFlags(CREATE_NO_WINDOW)`와 기존 `JobObject`를 함께 사용한다. 주기적인 Git 조회, 등록된 명령과 capture·update 검증에 같은 정책을 적용한다. 직접 실행하는 SSH·Codex child와 updater task 관리 명령에도 console 억제를 적용했다. process 수명과 piped output은 유지한다.
+- Mac과 native Windows MSVC에서 최종 formatter check, workspace/all-targets check, Clippy `-D warnings` 및 workspace test가 통과했다. Mac은 101 passed / 9 ignored, Windows는 100 passed / 10 ignored다. ignored 항목은 기존 native/live 검증과 subprocess helper이며 새 console fixture는 두 native 회귀 test가 subprocess로 호출한다.
+- native 회귀 test 두 개는 managed child와 SSH 형태의 직접 child에서 `GetConsoleWindow() == NULL`, stdout/stderr 전달 및 정상 종료를 확인했다. 기존 command integration은 timeout·취소·연결 종료의 descendant cleanup을 확인했다. compiler 입력 152개 파일의 Mac/Windows SHA-256이 모두 일치했다.
+- native debug binary 두 개를 실제 설치 경로에 반영하고 기존 `w7bridge-fatomic-host` task를 재시작했다. CLI SHA-256은 `74f11f673da872b6d66d9bd8d2d2c3594d6ca5662943592bc90d4949858ef1e3`, desktop SHA-256은 `14df50546da20338d778f5df27e5a7955252f8c7c06d2e37d6933d14b9612566`이다. owner config hash는 설치 전후 `14fadaf3bebfcc38ca8c617d32a2233838cf59d40a0da7636b9197264eb5e21c`로 같다. 이전 binary·config·task XML은 `D:/w7bridge/fatomic-2158/console-fix-backup-20261002`에 보존했다.
+- 재시작한 host는 desktop session 1에서 window handle 0으로 실행 중이다. 실제 Mac→Windows SSH MCP 초기화·도구 발견·project 조회가 통과했고 기존 Codex hub도 새 boot ID로 재연결했다. fatomic Git 상태 조회 응답을 확인했다. 전체 project sync 완료나 reboot 후 실행, 장시간 화면 관찰은 이번 검증에 포함하지 않았다. commit/push와 주 checkout 변경은 하지 않았다.

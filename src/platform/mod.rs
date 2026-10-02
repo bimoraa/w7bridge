@@ -7,6 +7,16 @@ pub(crate) mod macos;
 mod windows;
 #[cfg(windows)]
 pub(crate) use windows::identity::desktop_owner;
+
+pub(crate) fn configure_background( command: &mut tokio::process::Command, ) {
+
+    #[cfg(windows)]
+    command.creation_flags(windows_sys::Win32::System::Threading::CREATE_NO_WINDOW);
+    #[cfg(not(windows))]
+    let _ = command;
+
+}
+
 pub(crate) fn configure(command: &mut CommandWrap) {
 
     command.wrap(KillOnDrop);
